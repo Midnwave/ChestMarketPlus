@@ -47,8 +47,9 @@ public class ConfirmationGui {
         ItemStack preview = shop.getItemTemplate().clone();
         preview.setAmount(Math.min(quantity, 64));
         ItemMeta meta = preview.getItemMeta();
+        if (meta == null) meta = org.bukkit.Bukkit.getItemFactory().getItemMeta(preview.getType());
         List<String> lore = new java.util.ArrayList<>();
-        if (meta.hasLore()) {
+        if (meta != null && meta.hasLore()) {
             lore.addAll(meta.getLore());
             lore.add("");
         }
@@ -57,8 +58,10 @@ public class ConfirmationGui {
             lore.add(MessageUtils.colorize("<gray>Total: <gold>" + plugin.getConfigManager().getSettings().formatPrice(shop.getBuyPrice() * quantity)));
         else if (shop.getSellPrice() != null)
             lore.add(MessageUtils.colorize("<gray>Total: <gold>" + plugin.getConfigManager().getSettings().formatPrice(shop.getSellPrice() * quantity)));
-        meta.setLore(lore);
-        preview.setItemMeta(meta);
+        if (meta != null) {
+            meta.setLore(lore);
+            preview.setItemMeta(meta);
+        }
         inventory.setItem(13, preview);
 
         ItemStack confirm = createItem(Material.LIME_STAINED_GLASS_PANE,

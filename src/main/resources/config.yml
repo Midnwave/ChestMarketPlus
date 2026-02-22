@@ -47,7 +47,7 @@ display:
   enabled: true
   render-distance: 16
   # degrees per tick, 0 disables rotation
-  item-rotation-speed: 2.0
+  item-rotation-speed: 5.0
   # ticks between scroll steps, 0 disables scrolling
   scrolling-text-speed: 40
   out-of-stock-text: "<red><bold>OUT OF STOCK"
@@ -105,8 +105,8 @@ notifications:
 
 ratings:
   enabled: true
-  # thumbs or off
-  mode: "thumbs"
+  # on or off
+  mode: "on"
 
 discord:
   webhook-url: ""

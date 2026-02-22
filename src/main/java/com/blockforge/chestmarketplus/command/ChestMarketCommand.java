@@ -370,9 +370,11 @@ public class ChestMarketCommand implements CommandExecutor, TabCompleter {
     private void handleHolograms(CommandSender sender, String[] args) {
         if (!(sender instanceof Player player)) return;
         try {
+            plugin.getDatabaseManager().getPlayerDataRepository().ensurePlayer(player.getUniqueId(), player.getName());
             boolean current = plugin.getDatabaseManager().getPlayerDataRepository().isHologramsEnabled(player.getUniqueId());
             boolean newState = args.length > 1 ? "on".equalsIgnoreCase(args[1]) : !current;
             plugin.getDatabaseManager().getPlayerDataRepository().setHolograms(player.getUniqueId(), newState);
+            plugin.getDisplayManager().setHologramsVisibleForPlayer(player, newState);
             sendMessage(sender, plugin.getLocaleManager().getPrefixedMessage(
                     newState ? "holograms-enabled" : "holograms-disabled"));
         } catch (SQLException e) {

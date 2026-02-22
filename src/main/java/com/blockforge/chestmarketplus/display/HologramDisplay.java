@@ -47,7 +47,7 @@ public class HologramDisplay {
 
     private void spawnDisplayEntities(Location chestLoc) {
         try {
-            Location textLoc = chestLoc.clone().add(0.5, 1.6, 0.5);
+            Location textLoc = chestLoc.clone().add(0.5, 0.4, 0.5);
             Location itemLoc = chestLoc.clone().add(0.5, 2.2, 0.5);
 
             textDisplay = chestLoc.getWorld().spawnEntity(textLoc, EntityType.TEXT_DISPLAY);
@@ -82,8 +82,8 @@ public class HologramDisplay {
     }
 
     private void spawnArmorStands(Location chestLoc) {
-        Location textLoc = chestLoc.clone().add(0.5, 1.8, 0.5);
-        Location nameLoc = chestLoc.clone().add(0.5, 1.5, 0.5);
+        Location textLoc = chestLoc.clone().add(0.5, 0.4, 0.5);
+        Location nameLoc = chestLoc.clone().add(0.5, 0.1, 0.5);
 
         textStand = (ArmorStand) chestLoc.getWorld().spawnEntity(textLoc, EntityType.ARMOR_STAND);
         configureArmorStand(textStand);
@@ -161,6 +161,22 @@ public class HologramDisplay {
         if (textStand != null && !textStand.isDead()) textStand.remove();
         if (nameStand != null && !nameStand.isDead()) nameStand.remove();
         if (droppedItem != null && !droppedItem.isDead()) droppedItem.remove();
+    }
+
+    public void showForPlayer(org.bukkit.entity.Player player) {
+        if (textDisplay != null) player.showEntity(plugin, textDisplay);
+        if (itemDisplay != null) player.showEntity(plugin, itemDisplay);
+        if (textStand != null) player.showEntity(plugin, textStand);
+        if (nameStand != null) player.showEntity(plugin, nameStand);
+        if (droppedItem != null) player.showEntity(plugin, droppedItem);
+    }
+
+    public void hideForPlayer(org.bukkit.entity.Player player) {
+        if (textDisplay != null) player.hideEntity(plugin, textDisplay);
+        if (itemDisplay != null) player.hideEntity(plugin, itemDisplay);
+        if (textStand != null) player.hideEntity(plugin, textStand);
+        if (nameStand != null) player.hideEntity(plugin, nameStand);
+        if (droppedItem != null) player.hideEntity(plugin, droppedItem);
     }
 
     private String buildDisplayText() {

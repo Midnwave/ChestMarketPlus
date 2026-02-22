@@ -45,8 +45,9 @@ public class ShopGui {
 
         ItemStack displayItem = shop.getItemTemplate().clone();
         ItemMeta meta = displayItem.getItemMeta();
+        if (meta == null) meta = Bukkit.getItemFactory().getItemMeta(displayItem.getType());
         List<String> lore = new ArrayList<>();
-        if (meta.hasLore()) {
+        if (meta != null && meta.hasLore()) {
             lore.addAll(meta.getLore());
             lore.add("");
         }

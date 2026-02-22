@@ -3,6 +3,9 @@ package com.blockforge.chestmarketplus.shop;
 import com.blockforge.chestmarketplus.ChestMarketPlus;
 import com.blockforge.chestmarketplus.api.Shop;
 import com.blockforge.chestmarketplus.database.ShopRepository;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.data.type.Chest;
 
 import java.sql.SQLException;
 import java.util.*;
@@ -84,7 +87,32 @@ public class ShopManager {
     public Shop getShopByLocation(org.bukkit.Location location) {
         String key = location.getWorld().getName() + ":" + location.getBlockX() + ":"
                 + location.getBlockY() + ":" + location.getBlockZ();
-        return shopsByLocation.get(key);
+        Shop shop = shopsByLocation.get(key);
+        if (shop != null) return shop;
+
+        // Check paired half of a double chest
+        org.bukkit.Location paired = getPairedChestLocation(location);
+        if (paired != null) {
+            String pairedKey = paired.getWorld().getName() + ":" + paired.getBlockX() + ":"
+                    + paired.getBlockY() + ":" + paired.getBlockZ();
+            shop = shopsByLocation.get(pairedKey);
+        }
+        return shop;
+    }
+
+    public org.bukkit.Location getPairedChestLocation(org.bukkit.Location location) {
+        if (location.getWorld() == null) return null;
+        Block block = location.getBlock();
+        if (!(block.getBlockData() instanceof Chest chestData)) return null;
+        if (chestData.getType() == Chest.Type.SINGLE) return null;
+
+        BlockFace pairedFace = switch (chestData.getFacing()) {
+            case NORTH, SOUTH -> chestData.getType() == Chest.Type.LEFT ? BlockFace.WEST : BlockFace.EAST;
+            case EAST, WEST -> chestData.getType() == Chest.Type.LEFT ? BlockFace.NORTH : BlockFace.SOUTH;
+            default -> null;
+        };
+        if (pairedFace == null) return null;
+        return block.getRelative(pairedFace).getLocation();
     }
 
     public Shop getShopBySignLocation(org.bukkit.Location location) {

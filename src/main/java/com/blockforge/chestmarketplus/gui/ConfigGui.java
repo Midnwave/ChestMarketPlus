@@ -29,22 +29,22 @@ public class ConfigGui {
 
         Settings s = plugin.getConfigManager().getSettings();
 
-        inv.setItem(0, createNumberItem("&eCreation Fee", s.getCreationFee(), "shops.creation-fee"));
-        inv.setItem(1, createNumberItem("&eTax Rate", s.getTaxRate(), "shops.tax-rate"));
-        inv.setItem(2, createNumberItem("&eMax Shops", s.getDefaultMaxShops(), "shops.default-max-shops"));
-        inv.setItem(3, createNumberItem("&eMin Price", s.getGlobalMinPrice(), "shops.global-min-price"));
-        inv.setItem(4, createNumberItem("&eMax Price", s.getGlobalMaxPrice(), "shops.global-max-price"));
-        inv.setItem(5, createNumberItem("&eRender Distance", s.getRenderDistance(), "display.render-distance"));
+        inv.setItem(0, createNumberItem("&eCreation Fee", s.getCreationFee()));
+        inv.setItem(1, createNumberItem("&eTax Rate (%)", s.getTaxRate()));
+        inv.setItem(2, createNumberItem("&eMax Shops", s.getDefaultMaxShops()));
+        inv.setItem(3, createNumberItem("&eMin Price", s.getGlobalMinPrice()));
+        inv.setItem(4, createNumberItem("&eMax Price", s.getGlobalMaxPrice()));
+        inv.setItem(5, createNumberItem("&eRender Distance", s.getRenderDistance()));
 
-        inv.setItem(18, createToggle("&bShop Expiry", s.isExpiryEnabled(), "expiry.enabled"));
-        inv.setItem(19, createToggle("&bHolograms", s.isDisplayEnabled(), "display.enabled"));
-        inv.setItem(20, createToggle("&bChest Protection", s.isChestProtection(), "protection.chest-protection"));
-        inv.setItem(21, createToggle("&bSign Auto-Color", s.isSignAutoColor(), "signs.auto-color"));
-        inv.setItem(22, createToggle("&bRequire Crouch", s.isRequireCrouchForSign(), "signs.require-crouch"));
-        inv.setItem(23, createToggle("&bNotifications", s.isNotificationsDefaultEnabled(), "notifications.default-enabled"));
-        inv.setItem(24, createToggle("&bRatings", s.isRatingsEnabled(), "ratings.enabled"));
-        inv.setItem(25, createToggle("&bWorldGuard", s.isWorldGuardEnabled(), "worldguard.enabled"));
-        inv.setItem(26, createToggle("&bUpdate Checker", s.isUpdateCheckerEnabled(), "update-checker.enabled"));
+        inv.setItem(18, createToggle("&bShop Expiry", s.isExpiryEnabled()));
+        inv.setItem(19, createToggle("&bHolograms", s.isDisplayEnabled()));
+        inv.setItem(20, createToggle("&bChest Protection", s.isChestProtection()));
+        inv.setItem(21, createToggle("&bSign Auto-Color", s.isSignAutoColor()));
+        inv.setItem(22, createToggle("&bRequire Crouch", s.isRequireCrouchForSign()));
+        inv.setItem(23, createToggle("&bNotifications", s.isNotificationsDefaultEnabled()));
+        inv.setItem(24, createToggle("&bRatings", s.isRatingsEnabled()));
+        inv.setItem(25, createToggle("&bWorldGuard", s.isWorldGuardEnabled()));
+        inv.setItem(26, createToggle("&bUpdate Checker", s.isUpdateCheckerEnabled()));
 
         inv.setItem(49, createItem(Material.REDSTONE, MessageUtils.colorize("&c&lReload Plugin"),
                 MessageUtils.colorize("&7Click to reload configuration")));
@@ -69,7 +69,6 @@ public class ConfigGui {
             return;
         }
 
-        // toggle slots
         String togglePath = switch (slot) {
             case 18 -> "expiry.enabled";
             case 19 -> "display.enabled";
@@ -88,58 +87,65 @@ public class ConfigGui {
             plugin.getConfig().set(togglePath, !current);
             plugin.saveConfig();
             plugin.getConfigManager().loadConfig();
-            open();
+            // Schedule next tick to avoid inventory close event clearing the GUI registration
+            Bukkit.getScheduler().runTask(plugin, () -> plugin.getGuiManager().openConfigGui(player));
             return;
         }
 
-        // number value slots - cycle through values
-        switch (slot) {
-            case 0 -> cycleDouble("shops.creation-fee", new double[]{0, 50, 100, 250, 500, 1000});
-            case 1 -> cycleDouble("shops.tax-rate", new double[]{0, 1, 2, 5, 10, 15, 20});
-            case 2 -> cycleInt("shops.default-max-shops", new int[]{5, 10, 15, 20, 25, 50, 100});
-            case 3 -> cycleDouble("shops.global-min-price", new double[]{0.01, 0.1, 1.0, 5.0, 10.0});
-            case 4 -> cycleDouble("shops.global-max-price", new double[]{1000, 10000, 100000, 1000000, 10000000});
-            case 5 -> cycleInt("display.render-distance", new int[]{8, 16, 24, 32, 48, 64});
+        String numberPath = switch (slot) {
+            case 0 -> "shops.creation-fee";
+            case 1 -> "shops.tax-rate";
+            case 2 -> "shops.default-max-shops";
+            case 3 -> "shops.global-min-price";
+            case 4 -> "shops.global-max-price";
+            case 5 -> "display.render-distance";
+            default -> null;
+        };
+
+        if (numberPath != null) {
+            player.closeInventory();
+            String label = switch (slot) {
+                case 0 -> "Creation Fee";
+                case 1 -> "Tax Rate (%)";
+                case 2 -> "Max Shops";
+                case 3 -> "Min Price";
+                case 4 -> "Max Price";
+                case 5 -> "Render Distance";
+                default -> "Value";
+            };
+            boolean isInt = slot == 2 || slot == 5;
+            double currentVal = plugin.getConfig().getDouble(numberPath);
+            MessageUtils.sendMessage(player, MessageUtils.colorize(
+                    "<yellow>Enter new value for <white>" + label + " <gray>(current: <white>"
+                    + (isInt ? (int) currentVal : currentVal) + "<gray>) or type <white>cancel<gray>:"));
+
+            final String finalPath = numberPath;
+            plugin.getChatInputListener().awaitInput(player, input -> {
+                if ("cancel".equalsIgnoreCase(input)) {
+                    Bukkit.getScheduler().runTask(plugin, () -> plugin.getGuiManager().openConfigGui(player));
+                    return;
+                }
+                try {
+                    if (isInt) {
+                        int val = Integer.parseInt(input);
+                        plugin.getConfig().set(finalPath, val);
+                    } else {
+                        double val = Double.parseDouble(input);
+                        plugin.getConfig().set(finalPath, val);
+                    }
+                    plugin.saveConfig();
+                    plugin.getConfigManager().loadConfig();
+                    MessageUtils.sendMessage(player, MessageUtils.colorize(
+                            "<green>" + label + " set to <white>" + input));
+                } catch (NumberFormatException e) {
+                    MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("invalid-price"));
+                }
+                Bukkit.getScheduler().runTask(plugin, () -> plugin.getGuiManager().openConfigGui(player));
+            });
         }
     }
 
-    private void cycleDouble(String path, double[] values) {
-        double current = plugin.getConfig().getDouble(path);
-        double next = values[0];
-        for (int i = 0; i < values.length; i++) {
-            if (current == values[i] && i + 1 < values.length) {
-                next = values[i + 1];
-                break;
-            } else if (current == values[values.length - 1]) {
-                next = values[0];
-                break;
-            }
-        }
-        plugin.getConfig().set(path, next);
-        plugin.saveConfig();
-        plugin.getConfigManager().loadConfig();
-        open();
-    }
-
-    private void cycleInt(String path, int[] values) {
-        int current = plugin.getConfig().getInt(path);
-        int next = values[0];
-        for (int i = 0; i < values.length; i++) {
-            if (current == values[i] && i + 1 < values.length) {
-                next = values[i + 1];
-                break;
-            } else if (current == values[values.length - 1]) {
-                next = values[0];
-                break;
-            }
-        }
-        plugin.getConfig().set(path, next);
-        plugin.saveConfig();
-        plugin.getConfigManager().loadConfig();
-        open();
-    }
-
-    private ItemStack createToggle(String name, boolean value, String path) {
+    private ItemStack createToggle(String name, boolean value) {
         Material mat = value ? Material.LIME_DYE : Material.GRAY_DYE;
         String state = value ? "&aEnabled" : "&cDisabled";
         return createItem(mat, MessageUtils.colorize(name),
@@ -147,16 +153,16 @@ public class ConfigGui {
                 MessageUtils.colorize("&7Click to toggle"));
     }
 
-    private ItemStack createNumberItem(String name, double value, String path) {
+    private ItemStack createNumberItem(String name, double value) {
         return createItem(Material.PAPER, MessageUtils.colorize(name),
                 MessageUtils.colorize("&fValue: &e" + value),
-                MessageUtils.colorize("&7Click to cycle"));
+                MessageUtils.colorize("&7Click to change"));
     }
 
-    private ItemStack createNumberItem(String name, int value, String path) {
+    private ItemStack createNumberItem(String name, int value) {
         return createItem(Material.PAPER, MessageUtils.colorize(name),
                 MessageUtils.colorize("&fValue: &e" + value),
-                MessageUtils.colorize("&7Click to cycle"));
+                MessageUtils.colorize("&7Click to change"));
     }
 
     private ItemStack createItem(Material mat, String name, String... lore) {

@@ -62,6 +62,16 @@ public class DisplayManager {
         }
     }
 
+    public void setHologramsVisibleForPlayer(org.bukkit.entity.Player player, boolean visible) {
+        for (HologramDisplay display : displays.values()) {
+            if (visible) {
+                display.showForPlayer(player);
+            } else {
+                display.hideForPlayer(player);
+            }
+        }
+    }
+
     public void removeAllDisplays() {
         for (HologramDisplay display : displays.values()) {
             display.remove();

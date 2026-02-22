@@ -55,6 +55,10 @@ public class NotificationManager {
         }
     }
 
+    public void notifyFollowersRestock(Shop shop) {
+        notifyFollowers(shop);
+    }
+
     private void notifyFollowers(Shop shop) {
         try {
             List<UUID> followers = plugin.getDatabaseManager().getPlayerDataRepository()

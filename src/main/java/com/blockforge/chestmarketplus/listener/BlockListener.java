@@ -30,16 +30,24 @@ public class BlockListener implements Listener {
         Player player = event.getPlayer();
 
         Shop shop = null;
+        boolean isSign = false;
 
         if (block.getState() instanceof Chest) {
             shop = plugin.getShopManager().getShopByLocation(block.getLocation());
         } else if (block.getState() instanceof Sign) {
             shop = plugin.getShopManager().getShopBySignLocation(block.getLocation());
+            isSign = true;
         }
 
         if (shop == null) return;
 
         event.setCancelled(true);
+
+        // Restore sign text to client next tick so it doesn't show as blank
+        if (isSign) {
+            final Block signBlock = block;
+            plugin.getServer().getScheduler().runTask(plugin, () -> signBlock.getState().update(true, false));
+        }
 
         if (!player.getUniqueId().equals(shop.getOwnerUuid())
                 && !player.hasPermission("chestmarket.admin.delete")) {
@@ -78,6 +86,16 @@ public class BlockListener implements Listener {
                 if (plugin.getShopManager().getShopBySignLocation(block.getLocation()) != null) {
                     blockIterator.remove();
                 }
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onBlockPhysics(org.bukkit.event.block.BlockPhysicsEvent event) {
+        Block block = event.getBlock();
+        if (block.getState() instanceof Sign) {
+            if (plugin.getShopManager().getShopBySignLocation(block.getLocation()) != null) {
+                event.setCancelled(true);
             }
         }
     }

@@ -5,6 +5,7 @@ import com.blockforge.chestmarketplus.api.Shop;
 import com.blockforge.chestmarketplus.shop.StockManager;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
+import org.bukkit.block.DoubleChest;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -26,9 +27,15 @@ public class ChestListener implements Listener {
         if (!(event.getPlayer() instanceof Player player)) return;
 
         InventoryHolder holder = event.getInventory().getHolder();
-        if (!(holder instanceof Chest chest)) return;
+        org.bukkit.Location chestLoc = null;
+        if (holder instanceof Chest chest) {
+            chestLoc = chest.getLocation();
+        } else if (holder instanceof DoubleChest dc) {
+            if (dc.getLeftSide() instanceof Chest left) chestLoc = left.getLocation();
+        }
+        if (chestLoc == null) return;
 
-        Shop shop = plugin.getShopManager().getShopByLocation(chest.getLocation());
+        Shop shop = plugin.getShopManager().getShopByLocation(chestLoc);
         if (shop == null) return;
 
         if (!plugin.getConfigManager().getSettings().isChestProtection()) return;
@@ -49,15 +56,28 @@ public class ChestListener implements Listener {
 
     @EventHandler
     public void onInventoryClose(InventoryCloseEvent event) {
-        if (!(event.getPlayer() instanceof Player)) return;
+        if (!(event.getPlayer() instanceof Player player)) return;
 
         InventoryHolder holder = event.getInventory().getHolder();
-        if (!(holder instanceof Chest chest)) return;
+        org.bukkit.Location chestLoc = null;
+        if (holder instanceof Chest chest) {
+            chestLoc = chest.getLocation();
+        } else if (holder instanceof DoubleChest dc) {
+            if (dc.getLeftSide() instanceof Chest left) chestLoc = left.getLocation();
+        }
+        if (chestLoc == null) return;
 
-        Shop shop = plugin.getShopManager().getShopByLocation(chest.getLocation());
+        Shop shop = plugin.getShopManager().getShopByLocation(chestLoc);
         if (shop == null) return;
 
+        int stockBefore = shop.getCurrentStock();
         StockManager.updateStock(shop);
         plugin.getDisplayManager().updateDisplay(shop);
+
+        // Notify followers if stock increased (owner/trusted manually restocked)
+        int stockAfter = shop.getCurrentStock();
+        if (stockAfter > stockBefore && player.getUniqueId().equals(shop.getOwnerUuid())) {
+            plugin.getNotificationManager().notifyFollowersRestock(shop);
+        }
     }
 }

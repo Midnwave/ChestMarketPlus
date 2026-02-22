@@ -21,8 +21,6 @@ commands:
       - chestmarketplus
       - cshop
       - cs
-      - shop
-      - market
 
 permissions:
   chestmarket.use:
