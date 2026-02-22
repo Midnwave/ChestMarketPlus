@@ -18,8 +18,8 @@ public class GuiManager {
         this.plugin = plugin;
     }
 
-    public void openShopGui(Player player, Shop shop) {
-        ShopGui gui = new ShopGui(plugin, player, shop);
+    public void openShopGui(Player player, Shop shop, Runnable onBuy, Runnable onSell, Runnable onFavorite) {
+        ShopGui gui = new ShopGui(plugin, player, shop, onBuy, onSell, onFavorite);
         gui.open();
         activeGuis.put(player.getUniqueId(), new ActiveGui(gui, gui::handleClick, null));
     }
