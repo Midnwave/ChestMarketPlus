@@ -1,0 +1,80 @@
+name: ChestMarketPlus
+version: '${version}'
+main: com.blockforge.chestmarketplus.ChestMarketPlus
+api-version: '1.21'
+description: The most advanced free chest shop plugin
+authors:
+  - BlockForge
+website: ''
+
+softdepend:
+  - Vault
+  - WorldGuard
+
+commands:
+  cm:
+    description: ChestMarket+ main command
+    usage: /<command> help
+    aliases:
+      - chestmarket
+      - cmarket
+      - chestmarketplus
+
+permissions:
+  chestmarket.use:
+    description: Base permission to interact with shops
+    default: true
+  chestmarket.create:
+    description: Create player shops
+    default: true
+  chestmarket.create.admin:
+    description: Create admin shops with infinite stock
+    default: op
+  chestmarket.bypass.blacklist:
+    description: Bypass item blacklist restrictions
+    default: op
+  chestmarket.bypass.tax:
+    description: Bypass transaction tax
+    default: false
+  chestmarket.bypass.fee:
+    description: Bypass shop creation fee
+    default: false
+  chestmarket.bypass.worldrestrict:
+    description: Bypass world restrictions for shop creation
+    default: op
+  chestmarket.admin.bypass:
+    description: Open any shop chest regardless of ownership
+    default: op
+  chestmarket.admin.delete:
+    description: Force-delete any shop
+    default: op
+  chestmarket.admin.edit:
+    description: Edit any shop settings
+    default: op
+  chestmarket.admin.setprice:
+    description: Override any shop price
+    default: op
+  chestmarket.admin.list:
+    description: List all shops or by player
+    default: op
+  chestmarket.admin.freeze:
+    description: Freeze/unfreeze players from shop system
+    default: op
+  chestmarket.admin.tp:
+    description: Teleport to any shop
+    default: op
+  chestmarket.admin.restock:
+    description: Force-restock any shop
+    default: op
+  chestmarket.admin.info:
+    description: View detailed info on any shop
+    default: op
+  chestmarket.admin.stats:
+    description: View server-wide economy stats
+    default: op
+  chestmarket.admin.reload:
+    description: Reload plugin configuration
+    default: op
+  chestmarket.notify.update:
+    description: Receive update notifications
+    default: op
