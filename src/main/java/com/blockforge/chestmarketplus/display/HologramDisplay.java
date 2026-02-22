@@ -47,7 +47,7 @@ public class HologramDisplay {
 
     private void spawnDisplayEntities(Location chestLoc) {
         try {
-            Location textLoc = chestLoc.clone().add(0.5, 0.4, 0.5);
+            Location textLoc = chestLoc.clone().add(0.5, 1.1, 0.5);
             Location itemLoc = chestLoc.clone().add(0.5, 2.2, 0.5);
 
             textDisplay = chestLoc.getWorld().spawnEntity(textLoc, EntityType.TEXT_DISPLAY);
@@ -82,8 +82,8 @@ public class HologramDisplay {
     }
 
     private void spawnArmorStands(Location chestLoc) {
-        Location textLoc = chestLoc.clone().add(0.5, 0.4, 0.5);
-        Location nameLoc = chestLoc.clone().add(0.5, 0.1, 0.5);
+        Location textLoc = chestLoc.clone().add(0.5, 1.1, 0.5);
+        Location nameLoc = chestLoc.clone().add(0.5, 0.8, 0.5);
 
         textStand = (ArmorStand) chestLoc.getWorld().spawnEntity(textLoc, EntityType.ARMOR_STAND);
         configureArmorStand(textStand);
