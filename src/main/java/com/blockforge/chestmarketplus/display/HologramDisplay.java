@@ -15,6 +15,9 @@ import org.bukkit.util.Vector;
 
 public class HologramDisplay {
 
+    /** Max visible characters in the scrolling name window. */
+    private static final int SCROLL_WIDTH = 16;
+
     private final ChestMarketPlus plugin;
     private final Shop shop;
 
@@ -27,6 +30,11 @@ public class HologramDisplay {
 
     private float rotationAngle = 0;
     private boolean useDisplayEntities;
+
+    /** Current scroll start position (in stripped characters). */
+    private int scrollPos = 0;
+    /** Counts task invocations for scroll timing. */
+    private int scrollTick = 0;
 
     public HologramDisplay(ChestMarketPlus plugin, Shop shop) {
         this.plugin = plugin;
@@ -53,11 +61,17 @@ public class HologramDisplay {
             textDisplay = chestLoc.getWorld().spawnEntity(textLoc, EntityType.TEXT_DISPLAY);
             if (textDisplay instanceof org.bukkit.entity.TextDisplay td) {
                 td.setText(MessageUtils.colorize(buildDisplayText()));
-                td.setBillboard(org.bukkit.entity.Display.Billboard.VERTICAL);
+                td.setBillboard(org.bukkit.entity.Display.Billboard.CENTER);
                 td.setSeeThrough(false);
                 td.setDefaultBackground(false);
                 td.setShadowed(true);
                 td.setPersistent(false);
+                // Scale text to a readable size (default is too large)
+                org.bukkit.util.Transformation tt = td.getTransformation();
+                td.setTransformation(new org.bukkit.util.Transformation(
+                        tt.getTranslation(), tt.getLeftRotation(),
+                        new org.joml.Vector3f(0.55f, 0.55f, 0.55f),
+                        tt.getRightRotation()));
             }
 
             itemDisplay = chestLoc.getWorld().spawnEntity(itemLoc, EntityType.ITEM_DISPLAY);
@@ -179,18 +193,40 @@ public class HologramDisplay {
         if (droppedItem != null) player.hideEntity(plugin, droppedItem);
     }
 
+    /**
+     * Advances the scroll ticker. Called every 2 ticks by DisplayManager.
+     * Triggers a display update when the configured scroll delay elapses.
+     */
+    public void tickScroll() {
+        int speed = plugin.getConfigManager().getSettings().getScrollingTextSpeed();
+        if (speed <= 0) return;
+
+        String rawName = stripFormatting(ItemUtils.getDisplayName(shop.getItemTemplate()));
+        if (rawName.length() <= SCROLL_WIDTH) return;
+
+        // Task runs every 2 ticks; convert config speed (ticks) to call count
+        int callsPerStep = Math.max(1, speed / 2);
+        scrollTick++;
+        if (scrollTick >= callsPerStep) {
+            scrollTick = 0;
+            scrollPos = (scrollPos + 1) % (rawName.length() + 3); // +3 for " | " separator
+            update();
+        }
+    }
+
     private String buildDisplayText() {
         Settings settings = plugin.getConfigManager().getSettings();
         String itemName = ItemUtils.getDisplayName(shop.getItemTemplate());
+        String displayName = getScrolledName(itemName);
 
         if (shop.isOutOfStock() && !shop.isAdmin()) {
-            return MessageUtils.colorize(settings.getOutOfStockText()) + "\n"
-                    + MessageUtils.colorize("<gray>" + itemName + "\n")
+            return settings.getOutOfStockText() + "\n"
+                    + MessageUtils.colorize("<gray>" + displayName + "\n")
                     + MessageUtils.colorize("<gray>" + shop.getOwnerName());
         }
 
         StringBuilder sb = new StringBuilder();
-        sb.append(MessageUtils.colorize("<white><bold>" + itemName)).append("\n");
+        sb.append(MessageUtils.colorize("<white><bold>" + displayName)).append("\n");
 
         if (shop.getBuyPrice() != null) {
             sb.append(MessageUtils.colorize("<green>B: " + settings.formatPrice(shop.getBuyPrice())));
@@ -208,5 +244,25 @@ public class HologramDisplay {
         sb.append(MessageUtils.colorize("<gray>" + shop.getOwnerName()));
 
         return sb.toString();
+    }
+
+    /**
+     * Returns a SCROLL_WIDTH-wide scrolling window of the item name when it is
+     * longer than the window; returns the full name otherwise.
+     */
+    private String getScrolledName(String name) {
+        String raw = stripFormatting(name);
+        if (raw.length() <= SCROLL_WIDTH) return name;
+
+        // Seamless loop: "Waxed Weathered Cut... | Waxed Weathered Cut..."
+        String loop = raw + " | " + raw;
+        int start = scrollPos % (raw.length() + 3);
+        int end = Math.min(start + SCROLL_WIDTH, loop.length());
+        return loop.substring(start, end);
+    }
+
+    /** Strips legacy §x color codes and MiniMessage &lt;tags&gt; for length measurement. */
+    private String stripFormatting(String s) {
+        return s.replaceAll("§.", "").replaceAll("<[^>]+>", "").trim();
     }
 }

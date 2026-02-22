@@ -90,6 +90,7 @@ public class DisplayManager {
         rotationTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             for (HologramDisplay display : displays.values()) {
                 display.tickRotation();
+                display.tickScroll();
             }
         }, 2L, 2L);
     }
