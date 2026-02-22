@@ -52,7 +52,7 @@ public class ConfigManager {
         s.setDisplayEnabled(config.getBoolean("display.enabled", true));
         s.setRenderDistance(config.getInt("display.render-distance", 16));
         s.setItemRotationSpeed(config.getDouble("display.item-rotation-speed", 2.0));
-        s.setScrollingTextSpeed(config.getInt("display.scrolling-text-speed", 40));
+        s.setScrollingTextSpeed(config.getInt("display.scrolling-text-speed", 13));
         s.setOutOfStockText(config.getString("display.out-of-stock-text", "<red><bold>OUT OF STOCK"));
 
         s.setSignAutoColor(config.getBoolean("signs.auto-color", true));

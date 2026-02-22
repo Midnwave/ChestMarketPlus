@@ -49,14 +49,14 @@ public class BlockListener implements Listener {
         if (isSign) {
             final Block signBlock = block;
             final Player signingPlayer = player;
-            plugin.getServer().getScheduler().runTask(plugin, () -> {
+            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                 if (signBlock.getState() instanceof Sign sign) {
                     sign.update(true, false);
                     try {
                         signingPlayer.sendSignChange(sign.getLocation(), sign.getLines());
                     } catch (Exception ignored) {}
                 }
-            });
+            }, 3L);
         }
 
         if (!player.getUniqueId().equals(shop.getOwnerUuid())

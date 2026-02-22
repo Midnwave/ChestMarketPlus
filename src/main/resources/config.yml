@@ -49,7 +49,7 @@ display:
   # degrees per tick, 0 disables rotation
   item-rotation-speed: 10.0
   # ticks between scroll steps, 0 disables scrolling
-  scrolling-text-speed: 40
+  scrolling-text-speed: 13
   out-of-stock-text: "<red><bold>OUT OF STOCK"
 
 signs:
