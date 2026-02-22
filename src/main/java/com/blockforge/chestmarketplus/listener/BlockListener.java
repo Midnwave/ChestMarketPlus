@@ -13,6 +13,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.world.ChunkLoadEvent;
+import org.bukkit.event.world.ChunkUnloadEvent;
 
 import java.util.Iterator;
 
@@ -108,5 +110,21 @@ public class BlockListener implements Listener {
                 event.setCancelled(true);
             }
         }
+    }
+
+    @EventHandler
+    public void onChunkLoad(ChunkLoadEvent event) {
+        plugin.getDisplayManager().onChunkLoad(
+                event.getWorld().getName(),
+                event.getChunk().getX(),
+                event.getChunk().getZ());
+    }
+
+    @EventHandler
+    public void onChunkUnload(ChunkUnloadEvent event) {
+        plugin.getDisplayManager().onChunkUnload(
+                event.getWorld().getName(),
+                event.getChunk().getX(),
+                event.getChunk().getZ());
     }
 }
