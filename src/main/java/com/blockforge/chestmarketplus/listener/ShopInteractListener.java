@@ -47,9 +47,12 @@ public class ShopInteractListener implements Listener {
         boolean isOwnerOrTrusted = isOwnerOrTrusted(player, shop);
         boolean isAdmin = player.hasPermission(plugin.getConfigManager().getSettings().getAdminBypassPermission());
 
-        // Cancel default chest open for non-owners on right-click, and always cancel left-click
+        // Cancel default chest open for non-owners on right-click, and always cancel left-click.
+        // Always cancel right-click on a shop sign — prevents the sign editor from opening.
         if (block.getState() instanceof Chest) {
             if (!isOwnerOrTrusted && !isAdmin) event.setCancelled(true);
+        } else if (block.getState() instanceof Sign) {
+            event.setCancelled(true);
         }
         if (action == Action.LEFT_CLICK_BLOCK) {
             event.setCancelled(true);
@@ -163,7 +166,7 @@ public class ShopInteractListener implements Listener {
                 plugin.getEconomyProvider().deposit(
                         org.bukkit.Bukkit.getOfflinePlayer(shop.getOwnerUuid()), ownerPayment);
                 var inv = StockManager.getShopInventory(shop);
-                if (inv != null) ItemUtils.removeMatchingItems(inv, shop.getItemTemplate(), quantity);
+                if (inv != null) ItemUtils.removeMatchingItemsWithShulkers(inv, shop.getItemTemplate(), quantity);
             }
             ItemUtils.addItems(player.getInventory(), shop.getItemTemplate(), quantity);
             StockManager.updateStock(shop);

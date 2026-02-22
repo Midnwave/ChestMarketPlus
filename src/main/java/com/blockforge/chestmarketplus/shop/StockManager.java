@@ -24,7 +24,7 @@ public final class StockManager {
             return;
         }
 
-        shop.setCurrentStock(ItemUtils.countMatchingItems(inv, shop.getItemTemplate()));
+        shop.setCurrentStock(ItemUtils.countMatchingItemsWithShulkers(inv, shop.getItemTemplate()));
     }
 
     public static Inventory getShopInventory(Shop shop) {

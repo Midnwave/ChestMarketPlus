@@ -207,7 +207,7 @@ public class ShopGui {
 
             var inv = StockManager.getShopInventory(shop);
             if (inv != null) {
-                ItemUtils.removeMatchingItems(inv, shop.getItemTemplate(), quantity);
+                ItemUtils.removeMatchingItemsWithShulkers(inv, shop.getItemTemplate(), quantity);
             }
         }
 
