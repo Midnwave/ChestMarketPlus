@@ -47,6 +47,7 @@ public class Settings {
     private String whitelistMode;
 
     private boolean chestProtection;
+    private boolean allowChestPeek;
     private String adminBypassPermission;
 
     private boolean worldGuardEnabled;
@@ -172,6 +173,9 @@ public class Settings {
 
     public boolean isChestProtection() { return chestProtection; }
     public void setChestProtection(boolean chestProtection) { this.chestProtection = chestProtection; }
+
+    public boolean isAllowChestPeek() { return allowChestPeek; }
+    public void setAllowChestPeek(boolean allowChestPeek) { this.allowChestPeek = allowChestPeek; }
 
     public String getAdminBypassPermission() { return adminBypassPermission; }
     public void setAdminBypassPermission(String adminBypassPermission) { this.adminBypassPermission = adminBypassPermission; }

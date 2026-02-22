@@ -67,6 +67,7 @@ public class ConfigManager {
         s.setWhitelistMode(config.getString("items.whitelist.mode", "blacklist"));
 
         s.setChestProtection(config.getBoolean("protection.chest-protection", true));
+        s.setAllowChestPeek(config.getBoolean("protection.allow-chest-peek", false));
         s.setAdminBypassPermission(config.getString("protection.admin-bypass-permission", "chestmarket.admin.bypass"));
 
         s.setWorldGuardEnabled(config.getBoolean("worldguard.enabled", true));

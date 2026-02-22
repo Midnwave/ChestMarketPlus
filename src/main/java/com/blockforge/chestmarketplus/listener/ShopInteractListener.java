@@ -70,6 +70,14 @@ public class ShopInteractListener implements Listener {
 
         StockManager.updateStock(shop);
 
+        // Chest peek: non-owner sneak+right-clicks to view chest contents (read-only snapshot)
+        if (action == Action.RIGHT_CLICK_BLOCK && player.isSneaking()
+                && !isOwnerOrTrusted && !isAdmin && !shop.isAdmin()
+                && plugin.getConfigManager().getSettings().isAllowChestPeek()) {
+            plugin.getGuiManager().openChestPeekGui(player, shop);
+            return;
+        }
+
         ShopType type = shop.getShopType();
 
         if (type == ShopType.BUY_SELL) {

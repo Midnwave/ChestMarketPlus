@@ -45,6 +45,7 @@ public class ConfigGui {
         inv.setItem(24, createToggle("&bRatings", s.isRatingsEnabled()));
         inv.setItem(25, createToggle("&bWorldGuard", s.isWorldGuardEnabled()));
         inv.setItem(26, createToggle("&bUpdate Checker", s.isUpdateCheckerEnabled()));
+        inv.setItem(27, createToggle("&bChest Peek", s.isAllowChestPeek()));
 
         inv.setItem(49, createItem(Material.REDSTONE, MessageUtils.colorize("&c&lReload Plugin"),
                 MessageUtils.colorize("&7Click to reload configuration")));
@@ -79,6 +80,7 @@ public class ConfigGui {
             case 24 -> "ratings.enabled";
             case 25 -> "worldguard.enabled";
             case 26 -> "update-checker.enabled";
+            case 27 -> "protection.allow-chest-peek";
             default -> null;
         };
 

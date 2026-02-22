@@ -56,6 +56,15 @@ public class ShopManager {
         Shop shop = shopsById.get(shopId);
         if (shop == null) return false;
 
+        // Remove the sign block from the world automatically
+        org.bukkit.Location signLoc = shop.getSignLocation();
+        if (signLoc != null) {
+            org.bukkit.block.Block signBlock = signLoc.getBlock();
+            if (signBlock.getState() instanceof org.bukkit.block.Sign) {
+                signBlock.setType(org.bukkit.Material.AIR);
+            }
+        }
+
         try {
             getRepository().deleteShop(shopId);
             removeIndex(shop);
