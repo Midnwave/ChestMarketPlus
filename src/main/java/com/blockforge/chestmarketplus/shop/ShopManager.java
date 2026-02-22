@@ -115,9 +115,16 @@ public class ShopManager {
         if (!(block.getBlockData() instanceof Chest chestData)) return null;
         if (chestData.getType() == Chest.Type.SINGLE) return null;
 
+        // LEFT/RIGHT are from inside the chest looking out along its facing direction.
+        // NORTH: LEFT=west half, paired→east; RIGHT=east half, paired→west.
+        // SOUTH: LEFT=east half, paired→west; RIGHT=west half, paired→east.
+        // EAST:  LEFT=north half, paired→south; RIGHT=south half, paired→north.
+        // WEST:  LEFT=south half, paired→north; RIGHT=north half, paired→south.
         BlockFace pairedFace = switch (chestData.getFacing()) {
-            case NORTH, SOUTH -> chestData.getType() == Chest.Type.LEFT ? BlockFace.WEST : BlockFace.EAST;
-            case EAST, WEST -> chestData.getType() == Chest.Type.LEFT ? BlockFace.NORTH : BlockFace.SOUTH;
+            case NORTH -> chestData.getType() == Chest.Type.LEFT ? BlockFace.EAST  : BlockFace.WEST;
+            case SOUTH -> chestData.getType() == Chest.Type.LEFT ? BlockFace.WEST  : BlockFace.EAST;
+            case EAST  -> chestData.getType() == Chest.Type.LEFT ? BlockFace.SOUTH : BlockFace.NORTH;
+            case WEST  -> chestData.getType() == Chest.Type.LEFT ? BlockFace.NORTH : BlockFace.SOUTH;
             default -> null;
         };
         if (pairedFace == null) return null;

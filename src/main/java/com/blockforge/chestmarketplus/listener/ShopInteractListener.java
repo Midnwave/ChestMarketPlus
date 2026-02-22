@@ -47,20 +47,20 @@ public class ShopInteractListener implements Listener {
         boolean isOwnerOrTrusted = isOwnerOrTrusted(player, shop);
         boolean isAdmin = player.hasPermission(plugin.getConfigManager().getSettings().getAdminBypassPermission());
 
-        // Cancel default chest open for non-owners on right-click, and always cancel left-click.
-        // Always cancel right-click on a shop sign — prevents the sign editor from opening.
-        if (block.getState() instanceof Chest) {
-            if (!isOwnerOrTrusted && !isAdmin) event.setCancelled(true);
-        } else if (block.getState() instanceof Sign) {
-            event.setCancelled(true);
-        }
-        if (action == Action.LEFT_CLICK_BLOCK) {
-            event.setCancelled(true);
-        }
+        // Always cancel the interact event — prevents the chest or sign editor from opening
+        // via the vanilla event pipeline. For chests, owners get access via explicit open below.
+        event.setCancelled(true);
 
-        // Owners/admins right-clicking a chest get direct access — let them open it normally
-        if (action == Action.RIGHT_CLICK_BLOCK && block.getState() instanceof Chest
+        // Owners/admins right-clicking a chest: explicitly open the chest inventory ourselves
+        // so they can restock. Using player.openInventory() bypasses the cancelled event.
+        if (action == Action.RIGHT_CLICK_BLOCK && block.getState() instanceof Chest chestState
                 && (isOwnerOrTrusted || isAdmin)) {
+            org.bukkit.inventory.Inventory inv = chestState.getInventory();
+            if (inv.getHolder() instanceof org.bukkit.block.DoubleChest dc) {
+                player.openInventory(dc.getInventory());
+            } else {
+                player.openInventory(inv);
+            }
             return;
         }
 
@@ -108,7 +108,7 @@ public class ShopInteractListener implements Listener {
         MessageUtils.sendMessage(player, MessageUtils.colorize(
                 "<yellow>Buying: <white>" + itemName + " <gray>@ <green>"
                 + settings.formatPrice(shop.getBuyPrice()) + " <gray>each | Stock: <white>" + maxQty
-                + "\n<yellow>Enter quantity <gray>(1-" + maxQty + ") or type <white>cancel<gray>:"));
+                + "\n<yellow>Enter quantity <gray>(1-" + maxQty + ", or <white>all<gray>) or type <white>cancel<gray>:"));
 
         plugin.getChatInputListener().awaitInput(player, input -> {
             if ("cancel".equalsIgnoreCase(input)) {
@@ -116,11 +116,15 @@ public class ShopInteractListener implements Listener {
                 return;
             }
             int qty;
-            try {
-                qty = Integer.parseInt(input);
-            } catch (NumberFormatException e) {
-                MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("invalid-price"));
-                return;
+            if ("all".equalsIgnoreCase(input)) {
+                qty = maxQty;
+            } else {
+                try {
+                    qty = Integer.parseInt(input);
+                } catch (NumberFormatException e) {
+                    MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("invalid-price"));
+                    return;
+                }
             }
             if (qty <= 0 || qty > maxQty) {
                 MessageUtils.sendMessage(player, MessageUtils.colorize(
@@ -217,7 +221,7 @@ public class ShopInteractListener implements Listener {
         MessageUtils.sendMessage(player, MessageUtils.colorize(
                 "<yellow>Selling: <white>" + itemName + " <gray>@ <red>"
                 + settings.formatPrice(shop.getSellPrice()) + " <gray>each | You have: <white>" + available
-                + "\n<yellow>Enter quantity <gray>(1-" + available + ") or type <white>cancel<gray>:"));
+                + "\n<yellow>Enter quantity <gray>(1-" + available + ", or <white>all<gray>) or type <white>cancel<gray>:"));
 
         plugin.getChatInputListener().awaitInput(player, input -> {
             if ("cancel".equalsIgnoreCase(input)) {
@@ -225,11 +229,15 @@ public class ShopInteractListener implements Listener {
                 return;
             }
             int qty;
-            try {
-                qty = Integer.parseInt(input);
-            } catch (NumberFormatException e) {
-                MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("invalid-price"));
-                return;
+            if ("all".equalsIgnoreCase(input)) {
+                qty = available;
+            } else {
+                try {
+                    qty = Integer.parseInt(input);
+                } catch (NumberFormatException e) {
+                    MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("invalid-price"));
+                    return;
+                }
             }
             if (qty <= 0 || qty > available) {
                 MessageUtils.sendMessage(player, MessageUtils.colorize(

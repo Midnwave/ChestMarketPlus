@@ -3,7 +3,6 @@ package com.blockforge.chestmarketplus.listener;
 import com.blockforge.chestmarketplus.ChestMarketPlus;
 import com.blockforge.chestmarketplus.api.Shop;
 import com.blockforge.chestmarketplus.shop.StockManager;
-import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
 import org.bukkit.block.DoubleChest;
 import org.bukkit.entity.Player;
@@ -22,20 +21,11 @@ public class ChestListener implements Listener {
         this.plugin = plugin;
     }
 
-    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onInventoryOpen(InventoryOpenEvent event) {
         if (!(event.getPlayer() instanceof Player player)) return;
 
-        InventoryHolder holder = event.getInventory().getHolder();
-        org.bukkit.Location chestLoc = null;
-        if (holder instanceof Chest chest) {
-            chestLoc = chest.getLocation();
-        } else if (holder instanceof DoubleChest dc) {
-            if (dc.getLeftSide() instanceof Chest left) chestLoc = left.getLocation();
-        }
-        if (chestLoc == null) return;
-
-        Shop shop = plugin.getShopManager().getShopByLocation(chestLoc);
+        Shop shop = findShopFromHolder(event.getInventory().getHolder());
         if (shop == null) return;
 
         if (!plugin.getConfigManager().getSettings().isChestProtection()) return;
@@ -58,16 +48,7 @@ public class ChestListener implements Listener {
     public void onInventoryClose(InventoryCloseEvent event) {
         if (!(event.getPlayer() instanceof Player player)) return;
 
-        InventoryHolder holder = event.getInventory().getHolder();
-        org.bukkit.Location chestLoc = null;
-        if (holder instanceof Chest chest) {
-            chestLoc = chest.getLocation();
-        } else if (holder instanceof DoubleChest dc) {
-            if (dc.getLeftSide() instanceof Chest left) chestLoc = left.getLocation();
-        }
-        if (chestLoc == null) return;
-
-        Shop shop = plugin.getShopManager().getShopByLocation(chestLoc);
+        Shop shop = findShopFromHolder(event.getInventory().getHolder());
         if (shop == null) return;
 
         int stockBefore = shop.getCurrentStock();
@@ -79,5 +60,27 @@ public class ChestListener implements Listener {
         if (stockAfter > stockBefore && player.getUniqueId().equals(shop.getOwnerUuid())) {
             plugin.getNotificationManager().notifyFollowersRestock(shop);
         }
+    }
+
+    /**
+     * Resolves the shop registered for a chest inventory holder.
+     * Handles both single chests and double chests (tries both halves).
+     */
+    private Shop findShopFromHolder(InventoryHolder holder) {
+        if (holder instanceof Chest chest) {
+            return plugin.getShopManager().getShopByLocation(chest.getLocation());
+        }
+        if (holder instanceof DoubleChest dc) {
+            // Try left side
+            if (dc.getLeftSide() instanceof Chest left) {
+                Shop shop = plugin.getShopManager().getShopByLocation(left.getLocation());
+                if (shop != null) return shop;
+            }
+            // Try right side
+            if (dc.getRightSide() instanceof Chest right) {
+                return plugin.getShopManager().getShopByLocation(right.getLocation());
+            }
+        }
+        return null;
     }
 }
