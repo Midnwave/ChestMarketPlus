@@ -21,8 +21,11 @@ public class ConfigManager {
         plugin.reloadConfig();
 
         FileConfiguration config = plugin.getConfig();
+        migrateConfig(config);
         Settings s = new Settings();
 
+        s.setConfigVersion(config.getInt("config-version", 1));
+        s.setPrefix(config.getString("prefix", "<gray>[<gold>ChestMarket+<gray>] "));
         s.setLanguage(config.getString("language", "en_US"));
         s.setTriggerWords(config.getStringList("shop-creation-trigger-words"));
         if (s.getTriggerWords().isEmpty()) {
@@ -53,6 +56,7 @@ public class ConfigManager {
         s.setOutOfStockText(config.getString("display.out-of-stock-text", "<red><bold>OUT OF STOCK"));
 
         s.setSignAutoColor(config.getBoolean("signs.auto-color", true));
+        s.setRequireCrouchForSign(config.getBoolean("signs.require-crouch", false));
         s.setBuyColor(config.getString("signs.buy-color", "<green>"));
         s.setSellColor(config.getString("signs.sell-color", "<red>"));
         s.setBothColor(config.getString("signs.both-color", "<yellow>"));
@@ -91,6 +95,26 @@ public class ConfigManager {
         s.setBstatsEnabled(config.getBoolean("bstats.enabled", true));
 
         this.settings = s;
+    }
+
+    private static final int CURRENT_CONFIG_VERSION = 1;
+
+    private void migrateConfig(FileConfiguration config) {
+        int version = config.getInt("config-version", 0);
+        if (version >= CURRENT_CONFIG_VERSION) return;
+
+        // version 0 -> 1: added prefix and config-version keys
+        if (version < 1) {
+            if (!config.contains("prefix")) {
+                config.set("prefix", "<gray>[<gold>ChestMarket+<gray>] ");
+            }
+            if (!config.contains("signs.require-crouch")) {
+                config.set("signs.require-crouch", false);
+            }
+            config.set("config-version", 1);
+            plugin.saveConfig();
+            plugin.getLogger().info("Config migrated to version 1");
+        }
     }
 
     public Settings getSettings() {

@@ -43,7 +43,11 @@ public class LocaleManager {
             }
         }
 
-        prefix = messages.getOrDefault("prefix", "<gray>[<gold>ChestMarket+<gray>] ");
+        // prefix comes from config.yml, locale file is fallback
+        String configPrefix = configManager.getSettings().getPrefix();
+        prefix = (configPrefix != null && !configPrefix.isEmpty())
+                ? configPrefix
+                : messages.getOrDefault("prefix", "<gray>[<gold>ChestMarket+<gray>] ");
     }
 
     private void saveDefaultLocale(String name) {

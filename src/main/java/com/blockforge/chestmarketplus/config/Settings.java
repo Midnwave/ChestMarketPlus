@@ -7,6 +7,8 @@ import java.util.List;
 
 public class Settings {
 
+    private int configVersion;
+    private String prefix;
     private String language;
     private List<String> triggerWords;
 
@@ -34,6 +36,7 @@ public class Settings {
     private String outOfStockText;
 
     private boolean signAutoColor;
+    private boolean requireCrouchForSign;
     private String buyColor;
     private String sellColor;
     private String bothColor;
@@ -70,6 +73,12 @@ public class Settings {
     private boolean updateNotifyInGame;
 
     private boolean bstatsEnabled;
+
+    public int getConfigVersion() { return configVersion; }
+    public void setConfigVersion(int configVersion) { this.configVersion = configVersion; }
+
+    public String getPrefix() { return prefix; }
+    public void setPrefix(String prefix) { this.prefix = prefix; }
 
     public String getLanguage() { return language; }
     public void setLanguage(String language) { this.language = language; }
@@ -136,6 +145,9 @@ public class Settings {
 
     public boolean isSignAutoColor() { return signAutoColor; }
     public void setSignAutoColor(boolean signAutoColor) { this.signAutoColor = signAutoColor; }
+
+    public boolean isRequireCrouchForSign() { return requireCrouchForSign; }
+    public void setRequireCrouchForSign(boolean requireCrouchForSign) { this.requireCrouchForSign = requireCrouchForSign; }
 
     public String getBuyColor() { return buyColor; }
     public void setBuyColor(String buyColor) { this.buyColor = buyColor; }
