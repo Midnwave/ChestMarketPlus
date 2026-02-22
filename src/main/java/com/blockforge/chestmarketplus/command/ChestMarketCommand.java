@@ -56,6 +56,7 @@ public class ChestMarketCommand implements CommandExecutor, TabCompleter {
             case "info" -> handleInfo(sender);
             case "log" -> handleLog(sender, args);
             case "favorites" -> handleFavorites(sender);
+            case "favorite" -> handleFavorite(sender);
             case "follow" -> handleFollow(sender);
             case "unfollow" -> handleUnfollow(sender);
             case "notify" -> handleNotify(sender, args);
@@ -323,6 +324,33 @@ public class ChestMarketCommand implements CommandExecutor, TabCompleter {
     private void handleFavorites(CommandSender sender) {
         if (!(sender instanceof Player player)) return;
         plugin.getGuiManager().openFavoritesGui(player);
+    }
+
+    private void handleFavorite(CommandSender sender) {
+        if (!(sender instanceof Player player)) {
+            sendMessage(sender, plugin.getLocaleManager().getPrefixedMessage("player-only"));
+            return;
+        }
+        Shop shop = getTargetShop(player);
+        if (shop == null) {
+            sendMessage(sender, plugin.getLocaleManager().getPrefixedMessage("not-looking-at-shop"));
+            return;
+        }
+        try {
+            boolean isFav = plugin.getDatabaseManager().getPlayerDataRepository()
+                    .isFavorite(player.getUniqueId(), shop.getId());
+            if (isFav) {
+                plugin.getDatabaseManager().getPlayerDataRepository()
+                        .removeFavorite(player.getUniqueId(), shop.getId());
+                sendMessage(sender, plugin.getLocaleManager().getPrefixedMessage("favorite-removed"));
+            } else {
+                plugin.getDatabaseManager().getPlayerDataRepository()
+                        .addFavorite(player.getUniqueId(), shop.getId());
+                sendMessage(sender, plugin.getLocaleManager().getPrefixedMessage("favorite-added"));
+            }
+        } catch (Exception e) {
+            sendMessage(sender, plugin.getLocaleManager().getPrefixedMessage("error-generic"));
+        }
     }
 
     private void handleFollow(CommandSender sender) {
@@ -684,6 +712,7 @@ public class ChestMarketCommand implements CommandExecutor, TabCompleter {
             sendMessage(sender, "&e/cm info &7- View shop info");
             sendMessage(sender, "&e/cm log [page] &7- Transaction log");
             sendMessage(sender, "&e/cm favorites &7- Open favorites");
+            sendMessage(sender, "&e/cm favorite &7- Toggle favorite on looked-at shop");
             sendMessage(sender, "&e/cm follow / unfollow &7- Follow a shop");
             sendMessage(sender, "&e/cm notify [on|off] &7- Toggle notifications");
             sendMessage(sender, "&e/cm holograms [on|off] &7- Toggle holograms");
@@ -714,7 +743,7 @@ public class ChestMarketCommand implements CommandExecutor, TabCompleter {
 
         if (args.length == 1) {
             completions.addAll(List.of("help", "create", "delete", "setprice", "transfer", "trust", "untrust",
-                    "info", "log", "favorites", "follow", "unfollow", "notify", "holograms", "setitem"));
+                    "info", "log", "favorites", "favorite", "follow", "unfollow", "notify", "holograms", "setitem"));
             if (hasAnyAdminPerm(sender)) completions.add("admin");
             if (sender.hasPermission("chestmarket.admin.reload")) completions.add("reload");
             if (sender.hasPermission("chestmarket.admin.config")) completions.add("config");
