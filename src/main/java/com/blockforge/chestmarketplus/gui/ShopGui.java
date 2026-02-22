@@ -12,6 +12,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -66,8 +67,8 @@ public class ShopGui {
                     MessageUtils.colorize("<green><bold>BUY"),
                     MessageUtils.colorize("<gray>Price: <green>" + settings.formatPrice(shop.getBuyPrice())),
                     MessageUtils.colorize("<gray>Left-click: Buy 1"),
-                    MessageUtils.colorize("<gray>Shift-click: Buy Stack"),
-                    MessageUtils.colorize("<gray>Sneak+Right: Choose Amount"));
+                    MessageUtils.colorize("<gray>Shift+Left: Buy Stack"),
+                    MessageUtils.colorize("<gray>Right-click: Choose Amount"));
             inventory.setItem(11, buyBtn);
         }
 
@@ -76,8 +77,8 @@ public class ShopGui {
                     MessageUtils.colorize("<red><bold>SELL"),
                     MessageUtils.colorize("<gray>Price: <red>" + settings.formatPrice(shop.getSellPrice())),
                     MessageUtils.colorize("<gray>Left-click: Sell 1"),
-                    MessageUtils.colorize("<gray>Shift-click: Sell All"),
-                    MessageUtils.colorize("<gray>Sneak+Right: Choose Amount"));
+                    MessageUtils.colorize("<gray>Shift+Left: Sell All"),
+                    MessageUtils.colorize("<gray>Right-click: Choose Amount"));
             inventory.setItem(15, sellBtn);
         }
 
@@ -106,24 +107,24 @@ public class ShopGui {
         switch (slot) {
             case 11 -> { // Buy
                 if (!shop.getShopType().canBuy()) return;
-                if (event.isShiftClick()) {
-                    processBuy(player, shop.getItemTemplate().getMaxStackSize());
-                } else if (player.isSneaking() && event.isRightClick()) {
+                if (event.getClick() == ClickType.RIGHT || event.getClick() == ClickType.SHIFT_RIGHT) {
                     player.closeInventory();
                     plugin.getGuiManager().openQuantitySelector(player, shop, true, (p, qty) -> processBuy(p, qty));
+                } else if (event.isShiftClick()) {
+                    processBuy(player, shop.getItemTemplate().getMaxStackSize());
                 } else {
                     processBuy(player, 1);
                 }
             }
             case 15 -> { // Sell
                 if (!shop.getShopType().canSell()) return;
-                if (event.isShiftClick()) {
+                if (event.getClick() == ClickType.RIGHT || event.getClick() == ClickType.SHIFT_RIGHT) {
+                    player.closeInventory();
+                    plugin.getGuiManager().openQuantitySelector(player, shop, false, (p, qty) -> processSell(p, qty));
+                } else if (event.isShiftClick()) {
                     // Sell all matching items
                     int count = ItemUtils.countMatchingItems(player.getInventory(), shop.getItemTemplate());
                     if (count > 0) processSell(player, count);
-                } else if (player.isSneaking() && event.isRightClick()) {
-                    player.closeInventory();
-                    plugin.getGuiManager().openQuantitySelector(player, shop, false, (p, qty) -> processSell(p, qty));
                 } else {
                     processSell(player, 1);
                 }
