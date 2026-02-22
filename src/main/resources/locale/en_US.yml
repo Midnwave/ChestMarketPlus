@@ -68,4 +68,9 @@ player-untrusted: "<yellow>{player} <yellow>can no longer access your shop chest
 
 admin-shop-deleted: "<red>Shop #{id} has been force-deleted."
 
+enter-buy-price: "<yellow>Enter the <white>buy price <yellow>in chat (or type <white>cancel<yellow>):"
+enter-sell-price: "<yellow>Enter the <white>sell price <yellow>in chat (or type <white>cancel<yellow>):"
+enter-price: "<yellow>Enter the <white>price <yellow>in chat (or type <white>cancel<yellow>):"
+must-crouch-sign: "<red>You must be crouching to create a shop via sign!"
+
 update-available: "<yellow>A new version of ChestMarket+ is available! <white>{version}"

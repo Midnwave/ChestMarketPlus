@@ -68,4 +68,9 @@ player-untrusted: "<yellow>{player} <yellow>ya no puede acceder al cofre de tu t
 
 admin-shop-deleted: "<red>Tienda #{id} ha sido eliminada."
 
+enter-buy-price: "<yellow>Ingresa el <white>precio de compra <yellow>en el chat (o escribe <white>cancel<yellow>):"
+enter-sell-price: "<yellow>Ingresa el <white>precio de venta <yellow>en el chat (o escribe <white>cancel<yellow>):"
+enter-price: "<yellow>Ingresa el <white>precio <yellow>en el chat (o escribe <white>cancel<yellow>):"
+must-crouch-sign: "<red>Debes estar agachado para crear una tienda con un cartel!"
+
 update-available: "<yellow>Una nueva version de ChestMarket+ esta disponible! <white>{version}"
