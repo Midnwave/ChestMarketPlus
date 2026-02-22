@@ -74,3 +74,6 @@ enter-price: "<yellow>Ingresa el <white>precio <yellow>en el chat (o escribe <wh
 must-crouch-sign: "<red>Debes estar agachado para crear una tienda con un cartel!"
 
 update-available: "<yellow>Una nueva version de ChestMarket+ esta disponible! <white>{version}"
+
+item-updated: "<green>Item de la tienda actualizado a <white>{item}<green>!"
+chest-peek-disabled: "<red>Las previsualizaciones de cofre estan desactivadas en este servidor."

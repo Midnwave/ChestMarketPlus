@@ -47,7 +47,7 @@ display:
   enabled: true
   render-distance: 16
   # degrees per tick, 0 disables rotation
-  item-rotation-speed: 5.0
+  item-rotation-speed: 10.0
   # ticks between scroll steps, 0 disables scrolling
   scrolling-text-speed: 40
   out-of-stock-text: "<red><bold>OUT OF STOCK"
@@ -81,6 +81,8 @@ items:
 protection:
   chest-protection: true
   admin-bypass-permission: "chestmarket.admin.bypass"
+  # Allow non-owners to sneak+right-click a shop chest/sign to view its contents (read-only)
+  allow-chest-peek: false
 
 worldguard:
   enabled: true
