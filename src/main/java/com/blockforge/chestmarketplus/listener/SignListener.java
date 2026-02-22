@@ -2,23 +2,21 @@ package com.blockforge.chestmarketplus.listener;
 
 import com.blockforge.chestmarketplus.ChestMarketPlus;
 import com.blockforge.chestmarketplus.api.Shop;
-import com.blockforge.chestmarketplus.api.ShopType;
 import com.blockforge.chestmarketplus.config.Settings;
-import com.blockforge.chestmarketplus.shop.ShopCreator;
-import com.blockforge.chestmarketplus.util.ItemUtils;
+import com.blockforge.chestmarketplus.gui.ShopCreationGui;
 import com.blockforge.chestmarketplus.util.MessageUtils;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Chest;
-import org.bukkit.block.Sign;
 import org.bukkit.block.data.type.WallSign;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
 import java.util.List;
 
@@ -33,94 +31,73 @@ public class SignListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onSignChange(SignChangeEvent event) {
         Player player = event.getPlayer();
+        Block signBlock = event.getBlock();
+
+        // prevent editing signs that belong to existing shops
+        Shop existing = plugin.getShopManager().getShopBySignLocation(signBlock.getLocation());
+        if (existing != null) {
+            event.setCancelled(true);
+            return;
+        }
+
         String line0 = event.getLine(0);
         if (line0 == null) return;
 
-        String cleaned = line0.trim();
         Settings settings = plugin.getConfigManager().getSettings();
-        List<String> triggers = settings.getTriggerWords();
+        if (!isTriggerWord(line0.trim(), settings.getTriggerWords())) return;
 
-        boolean isTrigger = false;
-        for (String trigger : triggers) {
-            String triggerClean = trigger.replace("[", "").replace("]", "").trim();
-            String lineClean = cleaned.replace("[", "").replace("]", "").trim();
-            if (lineClean.equalsIgnoreCase(triggerClean)) {
-                isTrigger = true;
-                break;
-            }
+        // check crouch requirement
+        if (settings.isRequireCrouchForSign() && !player.isSneaking()) {
+            MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("must-crouch-sign"));
+            event.setCancelled(true);
+            return;
         }
 
-        if (!isTrigger) return;
-
-        Block signBlock = event.getBlock();
         Location chestLoc = findAdjacentChest(signBlock);
-
         if (chestLoc == null) {
             MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("no-chest-adjacent"));
             event.setCancelled(true);
             return;
         }
 
-        if (player.getInventory().getItemInMainHand().getType() == Material.AIR) {
+        if (plugin.getShopManager().getShopByLocation(chestLoc) != null) {
+            MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("shop-already-exists"));
+            event.setCancelled(true);
+            return;
+        }
+
+        ItemStack itemInHand = player.getInventory().getItemInMainHand();
+        if (itemInHand.getType() == Material.AIR) {
             MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("hold-item"));
             event.setCancelled(true);
             return;
         }
 
-        String line1 = event.getLine(1);
-        String line2 = event.getLine(2);
-        String line3 = event.getLine(3);
-
-        double buyPrice = parsePrice(line2);
-        double sellPrice = parsePrice(line3);
-
-        ShopType type;
-        if (buyPrice > 0 && sellPrice > 0) {
-            type = ShopType.BUY_SELL;
-        } else if (buyPrice > 0) {
-            type = ShopType.BUY;
-        } else if (sellPrice > 0) {
-            type = ShopType.SELL;
-        } else {
-            buyPrice = parsePrice(line1);
-            if (buyPrice > 0) {
-                type = ShopType.BUY;
-            } else {
-                MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("invalid-price"));
-                event.setCancelled(true);
-                return;
-            }
-        }
-
-        ShopCreator creator = new ShopCreator(plugin);
-        ShopCreator.CreateResult result = creator.createFromSign(
-                player, type, buyPrice, sellPrice, chestLoc, signBlock.getLocation());
-
-        if (!result.isSuccess()) {
-            MessageUtils.sendMessage(player, result.getErrorMessage());
+        if (!player.hasPermission("chestmarket.create")) {
+            MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("no-permission"));
             event.setCancelled(true);
             return;
         }
 
-        Shop shop = result.getShop();
+        // cancel sign text, we will set it after creation
+        event.setCancelled(true);
 
-        String itemName = ItemUtils.getDisplayName(shop.getItemTemplate());
-        String colorTag = getShopColorTag(shop.getShopType(), settings);
+        // open creation gui or dialog
+        ItemStack template = itemInHand.clone();
+        template.setAmount(1);
+        Location signLoc = signBlock.getLocation();
 
-        event.setLine(0, MessageUtils.colorize(colorTag + "[ChestMarket+]"));
-        event.setLine(1, MessageUtils.colorize("<white>" + truncate(itemName, 15)));
-        event.setLine(2, shop.getBuyPrice() != null
-                ? MessageUtils.colorize("<green>B: " + settings.getCurrencySymbol() + String.format("%.2f", shop.getBuyPrice()))
-                : MessageUtils.colorize("<gray>B: N/A"));
-        event.setLine(3, shop.getSellPrice() != null
-                ? MessageUtils.colorize("<red>S: " + settings.getCurrencySymbol() + String.format("%.2f", shop.getSellPrice()))
-                : MessageUtils.colorize("<gray>S: N/A"));
+        ShopCreationGui gui = new ShopCreationGui(plugin, player, template, chestLoc, signLoc);
+        plugin.getGuiManager().openCreationGui(player, gui);
+    }
 
-        MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("shop-created",
-                "{item}", itemName,
-                "{price}", shop.getBuyPrice() != null
-                        ? settings.formatPrice(shop.getBuyPrice())
-                        : settings.formatPrice(shop.getSellPrice())));
+    private boolean isTriggerWord(String input, List<String> triggers) {
+        String cleaned = input.replace("[", "").replace("]", "").trim();
+        for (String trigger : triggers) {
+            String triggerClean = trigger.replace("[", "").replace("]", "").trim();
+            if (cleaned.equalsIgnoreCase(triggerClean)) return true;
+        }
+        return false;
     }
 
     private Location findAdjacentChest(Block signBlock) {
@@ -139,32 +116,5 @@ public class SignListener implements Listener {
             }
         }
         return null;
-    }
-
-    private double parsePrice(String line) {
-        if (line == null || line.trim().isEmpty()) return 0;
-        String cleaned = line.trim()
-                .replaceAll("(?i)^[BS]:\\s*", "")
-                .replace("$", "")
-                .replace(",", "")
-                .trim();
-        try {
-            return Double.parseDouble(cleaned);
-        } catch (NumberFormatException e) {
-            return 0;
-        }
-    }
-
-    private String getShopColorTag(ShopType type, Settings settings) {
-        return switch (type) {
-            case BUY -> settings.getBuyColor();
-            case SELL -> settings.getSellColor();
-            case BUY_SELL -> settings.getBothColor();
-        };
-    }
-
-    private String truncate(String text, int maxLength) {
-        if (text.length() <= maxLength) return text;
-        return text.substring(0, maxLength - 2) + "..";
     }
 }
