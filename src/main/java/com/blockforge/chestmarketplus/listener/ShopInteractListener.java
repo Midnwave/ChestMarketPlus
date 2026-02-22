@@ -2,11 +2,14 @@ package com.blockforge.chestmarketplus.listener;
 
 import com.blockforge.chestmarketplus.ChestMarketPlus;
 import com.blockforge.chestmarketplus.api.Shop;
+import com.blockforge.chestmarketplus.api.ShopTransaction;
 import com.blockforge.chestmarketplus.api.ShopType;
 import com.blockforge.chestmarketplus.config.Settings;
 import com.blockforge.chestmarketplus.shop.StockManager;
 import com.blockforge.chestmarketplus.util.ItemUtils;
 import com.blockforge.chestmarketplus.util.MessageUtils;
+import org.bukkit.Bukkit;
+import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
 import org.bukkit.block.Sign;
@@ -84,7 +87,7 @@ public class ShopInteractListener implements Listener {
         ShopType type = shop.getShopType();
 
         if (type == ShopType.BUY_SELL) {
-            plugin.getGuiManager().openShopGui(player, shop);
+            handleBuySellShop(player, shop);
         } else if (type == ShopType.BUY) {
             startBuyFlow(player, shop);
         } else if (type == ShopType.SELL) {
@@ -92,8 +95,42 @@ public class ShopInteractListener implements Listener {
         }
     }
 
+    /**
+     * Opens the full shop interaction flow for the given shop.
+     * Can be called from FavoritesGui, admin commands, etc.
+     */
+    public void openShopInteraction(Player player, Shop shop) {
+        StockManager.updateStock(shop);
+        ShopType type = shop.getShopType();
+        if (type == ShopType.BUY_SELL) {
+            handleBuySellShop(player, shop);
+        } else if (type == ShopType.BUY) {
+            startBuyFlow(player, shop);
+        } else if (type == ShopType.SELL) {
+            startSellFlow(player, shop);
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // BUY_SELL shop: show the main shop dialog (Buy / Sell / Favorite buttons)
+    // -------------------------------------------------------------------------
+
+    private void handleBuySellShop(Player player, Shop shop) {
+        plugin.getDialogProvider().showShopDialog(player, shop,
+                () -> startBuyFlow(player, shop),
+                () -> startSellFlow(player, shop),
+                () -> {
+                    toggleFavorite(player, shop);
+                    // Re-open the shop dialog so the favorite state is refreshed
+                    handleBuySellShop(player, shop);
+                });
+    }
+
+    // -------------------------------------------------------------------------
+    // Buy flow: quantity selection + confirmation via DialogProvider
+    // -------------------------------------------------------------------------
+
     private void startBuyFlow(Player player, Shop shop) {
-        Settings settings = plugin.getConfigManager().getSettings();
         StockManager.updateStock(shop);
 
         if (!shop.isAdmin() && shop.getCurrentStock() == 0) {
@@ -102,45 +139,21 @@ public class ShopInteractListener implements Listener {
             return;
         }
 
-        String itemName = ItemUtils.getDisplayName(shop.getItemTemplate());
         int maxQty = shop.isAdmin() ? 64 : shop.getCurrentStock();
 
-        boolean allowAll = settings.isAllowAllQuantity();
-        String allHint = allowAll ? ", or <white>all<gray>" : "";
-        MessageUtils.sendMessage(player, MessageUtils.colorize(
-                "<yellow>Buying: <white>" + itemName + " <gray>@ <green>"
-                + settings.formatPrice(shop.getBuyPrice()) + " <gray>each | Stock: <white>" + maxQty
-                + "\n<yellow>Enter quantity <gray>(1-" + maxQty + allHint + ") or type <white>cancel<gray>:"));
-
-        plugin.getChatInputListener().awaitInput(player, input -> {
-            if ("cancel".equalsIgnoreCase(input)) {
-                MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("transaction-cancelled"));
-                return;
-            }
-            int qty;
-            if (allowAll && "all".equalsIgnoreCase(input)) {
-                qty = maxQty;
-            } else {
-                try {
-                    qty = Integer.parseInt(input);
-                } catch (NumberFormatException e) {
-                    MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("invalid-price"));
-                    return;
-                }
-            }
-            if (qty <= 0 || qty > maxQty) {
-                MessageUtils.sendMessage(player, MessageUtils.colorize(
-                        "<red>Quantity must be between 1 and " + maxQty + "."));
-                return;
-            }
-            executeBuyConfirm(player, shop, qty);
-        });
+        plugin.getDialogProvider().showBuyQuantityAndConfirm(player, shop, maxQty,
+                (qty) -> executeBuyTransaction(player, shop, qty),
+                () -> MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("transaction-cancelled")));
     }
 
-    private void executeBuyConfirm(Player player, Shop shop, int quantity) {
+    private void executeBuyTransaction(Player player, Shop shop, int quantity) {
         Settings settings = plugin.getConfigManager().getSettings();
-        StockManager.updateStock(shop);
 
+        if (shop.getMaxQuantity() > 0 && quantity > shop.getMaxQuantity()) {
+            quantity = shop.getMaxQuantity();
+        }
+
+        StockManager.updateStock(shop);
         if (!shop.isAdmin() && shop.getCurrentStock() < quantity) {
             MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("not-enough-stock",
                     "{stock}", String.valueOf(shop.getCurrentStock())));
@@ -156,54 +169,58 @@ public class ShopInteractListener implements Listener {
             return;
         }
 
-        Runnable onConfirm = () -> {
-            StockManager.updateStock(shop);
-            if (!shop.isAdmin() && shop.getCurrentStock() < quantity) {
-                MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("not-enough-stock",
-                        "{stock}", String.valueOf(shop.getCurrentStock())));
-                return;
-            }
-            if (!plugin.getEconomyProvider().withdraw(player, totalPrice)) {
-                MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("transaction-failed"));
-                return;
-            }
-            double ownerPayment = totalPrice - tax;
-            if (!shop.isAdmin()) {
-                plugin.getEconomyProvider().deposit(
-                        org.bukkit.Bukkit.getOfflinePlayer(shop.getOwnerUuid()), ownerPayment);
-                var inv = StockManager.getShopInventory(shop);
-                if (inv != null) ItemUtils.removeMatchingItemsWithShulkers(inv, shop.getItemTemplate(), quantity);
-            }
-            ItemUtils.addItems(player.getInventory(), shop.getItemTemplate(), quantity);
-            StockManager.updateStock(shop);
-            plugin.getDisplayManager().updateDisplay(shop);
-            try {
-                com.blockforge.chestmarketplus.api.ShopTransaction tx =
-                        new com.blockforge.chestmarketplus.api.ShopTransaction(
-                                shop.getId(), player.getUniqueId(), player.getName(),
-                                "BUY", shop.getItemTemplate().getType().name(), quantity, totalPrice, tax);
-                plugin.getDatabaseManager().getTransactionRepository().logTransaction(tx);
-            } catch (Exception ignored) {}
-            try {
-                player.playSound(player.getLocation(),
-                        org.bukkit.Sound.valueOf(settings.getBuySoundName()), 1f, 1f);
-            } catch (Exception ignored) {}
-            String itemName = ItemUtils.getDisplayName(shop.getItemTemplate());
-            MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("shop-buy-success",
-                    "{quantity}", String.valueOf(quantity), "{item}", itemName,
-                    "{price}", settings.formatPrice(totalPrice)));
-            plugin.getNotificationManager().notifyOwner(shop, player, "BUY", quantity, totalPrice);
-        };
+        if (!plugin.getEconomyProvider().withdraw(player, totalPrice)) {
+            MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("transaction-failed"));
+            return;
+        }
 
-        Runnable onCancel = () -> MessageUtils.sendMessage(player,
-                plugin.getLocaleManager().getPrefixedMessage("transaction-cancelled"));
+        double ownerPayment = totalPrice - tax;
+        if (!shop.isAdmin()) {
+            plugin.getEconomyProvider().deposit(
+                    Bukkit.getOfflinePlayer(shop.getOwnerUuid()), ownerPayment);
+            var inv = StockManager.getShopInventory(shop);
+            if (inv != null) ItemUtils.removeMatchingItemsWithShulkers(inv, shop.getItemTemplate(), quantity);
+        }
 
-        plugin.getDialogProvider().showBuyConfirmation(player, shop, quantity, onConfirm, onCancel);
+        ItemUtils.addItems(player.getInventory(), shop.getItemTemplate(), quantity);
+
+        StockManager.updateStock(shop);
+        plugin.getDisplayManager().updateDisplay(shop);
+
+        try {
+            ShopTransaction tx = new ShopTransaction(
+                    shop.getId(), player.getUniqueId(), player.getName(),
+                    "BUY", shop.getItemTemplate().getType().name(), quantity, totalPrice, tax);
+            plugin.getDatabaseManager().getTransactionRepository().logTransaction(tx);
+        } catch (Exception ignored) {}
+
+        try {
+            player.playSound(player.getLocation(),
+                    Sound.valueOf(settings.getBuySoundName()), 1f, 1f);
+        } catch (Exception ignored) {}
+
+        if (settings.isTransactionBurst() && shop.getChestLocation() != null) {
+            try {
+                var particleType = org.bukkit.Particle.valueOf(settings.getParticleTypeName());
+                shop.getChestLocation().getWorld().spawnParticle(
+                        particleType, shop.getChestLocation().clone().add(0.5, 1.5, 0.5),
+                        settings.getParticleCount(), 0.3, 0.3, 0.3, 0);
+            } catch (Exception ignored) {}
+        }
+
+        String itemName = ItemUtils.getDisplayName(shop.getItemTemplate());
+        MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("shop-buy-success",
+                "{quantity}", String.valueOf(quantity), "{item}", itemName,
+                "{price}", settings.formatPrice(totalPrice)));
+
+        plugin.getNotificationManager().notifyOwner(shop, player, "BUY", quantity, totalPrice);
     }
 
-    private void startSellFlow(Player player, Shop shop) {
-        Settings settings = plugin.getConfigManager().getSettings();
+    // -------------------------------------------------------------------------
+    // Sell flow: quantity selection + confirmation via DialogProvider
+    // -------------------------------------------------------------------------
 
+    private void startSellFlow(Player player, Shop shop) {
         int available = ItemUtils.countMatchingItems(player.getInventory(), shop.getItemTemplate());
         if (available == 0) {
             String itemName = ItemUtils.getDisplayName(shop.getItemTemplate());
@@ -212,40 +229,12 @@ public class ShopInteractListener implements Listener {
             return;
         }
 
-        String itemName = ItemUtils.getDisplayName(shop.getItemTemplate());
-        boolean allowAll = settings.isAllowAllQuantity();
-        String allHint = allowAll ? ", or <white>all<gray>" : "";
-        MessageUtils.sendMessage(player, MessageUtils.colorize(
-                "<yellow>Selling: <white>" + itemName + " <gray>@ <red>"
-                + settings.formatPrice(shop.getSellPrice()) + " <gray>each | You have: <white>" + available
-                + "\n<yellow>Enter quantity <gray>(1-" + available + allHint + ") or type <white>cancel<gray>:"));
-
-        plugin.getChatInputListener().awaitInput(player, input -> {
-            if ("cancel".equalsIgnoreCase(input)) {
-                MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("transaction-cancelled"));
-                return;
-            }
-            int qty;
-            if (allowAll && "all".equalsIgnoreCase(input)) {
-                qty = available;
-            } else {
-                try {
-                    qty = Integer.parseInt(input);
-                } catch (NumberFormatException e) {
-                    MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("invalid-price"));
-                    return;
-                }
-            }
-            if (qty <= 0 || qty > available) {
-                MessageUtils.sendMessage(player, MessageUtils.colorize(
-                        "<red>Quantity must be between 1 and " + available + "."));
-                return;
-            }
-            executeSellConfirm(player, shop, qty);
-        });
+        plugin.getDialogProvider().showSellQuantityAndConfirm(player, shop, available,
+                (qty) -> executeSellTransaction(player, shop, qty),
+                () -> MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("transaction-cancelled")));
     }
 
-    private void executeSellConfirm(Player player, Shop shop, int quantity) {
+    private void executeSellTransaction(Player player, Shop shop, int quantity) {
         Settings settings = plugin.getConfigManager().getSettings();
 
         if (!shop.isAdmin()) {
@@ -260,68 +249,87 @@ public class ShopInteractListener implements Listener {
         double tax = player.hasPermission("chestmarket.bypass.tax") ? 0 : totalPrice * (settings.getTaxRate() / 100.0);
         double playerReceives = totalPrice - tax;
 
-        // Block only if partial-sell is disabled and owner can't pay
-        if (!shop.isAdmin() && !settings.isPartialSellWhenLowFunds()
-                && !plugin.getEconomyProvider().has(org.bukkit.Bukkit.getOfflinePlayer(shop.getOwnerUuid()), totalPrice)) {
-            MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("owner-no-funds"));
+        // Re-check owner balance at execution time; handle partial payment if enabled
+        if (!shop.isAdmin()) {
+            double ownerBal = plugin.getEconomyProvider().getBalance(
+                    Bukkit.getOfflinePlayer(shop.getOwnerUuid()));
+            if (ownerBal < totalPrice) {
+                if (!settings.isPartialSellWhenLowFunds()) {
+                    MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("owner-no-funds"));
+                    return;
+                }
+                // Partial payment: pay what the owner actually has
+                totalPrice = ownerBal;
+                tax = player.hasPermission("chestmarket.bypass.tax") ? 0 : totalPrice * (settings.getTaxRate() / 100.0);
+                playerReceives = totalPrice - tax;
+            }
+        }
+
+        int removed = ItemUtils.removeMatchingItems(player.getInventory(), shop.getItemTemplate(), quantity);
+        if (removed < quantity) {
+            MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("transaction-failed"));
             return;
         }
 
-        Runnable onConfirm = () -> {
-            // Re-check owner balance at execution time; apply partial payment if configured
-            double actualTotal = totalPrice;
-            double actualTax = tax;
-            double actualReceives = playerReceives;
-            if (!shop.isAdmin()) {
-                double ownerBal = plugin.getEconomyProvider().getBalance(
-                        org.bukkit.Bukkit.getOfflinePlayer(shop.getOwnerUuid()));
-                if (ownerBal < actualTotal) {
-                    if (!settings.isPartialSellWhenLowFunds()) {
-                        MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("owner-no-funds"));
-                        return;
-                    }
-                    actualTotal = ownerBal;
-                    actualTax = player.hasPermission("chestmarket.bypass.tax") ? 0 : actualTotal * (settings.getTaxRate() / 100.0);
-                    actualReceives = actualTotal - actualTax;
-                }
-            }
+        plugin.getEconomyProvider().deposit(player, playerReceives);
 
-            int removed = ItemUtils.removeMatchingItems(player.getInventory(), shop.getItemTemplate(), quantity);
-            if (removed < quantity) {
-                MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("transaction-failed"));
-                return;
-            }
-            plugin.getEconomyProvider().deposit(player, actualReceives);
-            if (!shop.isAdmin()) {
-                plugin.getEconomyProvider().withdraw(
-                        org.bukkit.Bukkit.getOfflinePlayer(shop.getOwnerUuid()), actualTotal);
-                var inv = StockManager.getShopInventory(shop);
-                if (inv != null) ItemUtils.addItems(inv, shop.getItemTemplate(), quantity);
-            }
-            StockManager.updateStock(shop);
-            plugin.getDisplayManager().updateDisplay(shop);
+        if (!shop.isAdmin()) {
+            plugin.getEconomyProvider().withdraw(
+                    Bukkit.getOfflinePlayer(shop.getOwnerUuid()), totalPrice);
+            var inv = StockManager.getShopInventory(shop);
+            if (inv != null) ItemUtils.addItems(inv, shop.getItemTemplate(), quantity);
+        }
+
+        StockManager.updateStock(shop);
+        plugin.getDisplayManager().updateDisplay(shop);
+
+        try {
+            ShopTransaction tx = new ShopTransaction(
+                    shop.getId(), player.getUniqueId(), player.getName(),
+                    "SELL", shop.getItemTemplate().getType().name(), quantity, totalPrice, tax);
+            plugin.getDatabaseManager().getTransactionRepository().logTransaction(tx);
+        } catch (Exception ignored) {}
+
+        try {
+            player.playSound(player.getLocation(),
+                    Sound.valueOf(settings.getSellSoundName()), 1f, 1f);
+        } catch (Exception ignored) {}
+
+        if (settings.isTransactionBurst() && shop.getChestLocation() != null) {
             try {
-                com.blockforge.chestmarketplus.api.ShopTransaction tx =
-                        new com.blockforge.chestmarketplus.api.ShopTransaction(
-                                shop.getId(), player.getUniqueId(), player.getName(),
-                                "SELL", shop.getItemTemplate().getType().name(), quantity, actualTotal, actualTax);
-                plugin.getDatabaseManager().getTransactionRepository().logTransaction(tx);
+                var particleType = org.bukkit.Particle.valueOf(settings.getParticleTypeName());
+                shop.getChestLocation().getWorld().spawnParticle(
+                        particleType, shop.getChestLocation().clone().add(0.5, 1.5, 0.5),
+                        settings.getParticleCount(), 0.3, 0.3, 0.3, 0);
             } catch (Exception ignored) {}
-            try {
-                player.playSound(player.getLocation(),
-                        org.bukkit.Sound.valueOf(settings.getSellSoundName()), 1f, 1f);
-            } catch (Exception ignored) {}
-            String itemName = ItemUtils.getDisplayName(shop.getItemTemplate());
-            MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("shop-sell-success",
-                    "{quantity}", String.valueOf(quantity), "{item}", itemName,
-                    "{price}", settings.formatPrice(actualReceives)));
-            plugin.getNotificationManager().notifyOwner(shop, player, "SELL", quantity, actualTotal);
-        };
+        }
 
-        Runnable onCancel = () -> MessageUtils.sendMessage(player,
-                plugin.getLocaleManager().getPrefixedMessage("transaction-cancelled"));
+        String itemName = ItemUtils.getDisplayName(shop.getItemTemplate());
+        MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("shop-sell-success",
+                "{quantity}", String.valueOf(quantity), "{item}", itemName,
+                "{price}", settings.formatPrice(playerReceives)));
 
-        plugin.getDialogProvider().showSellConfirmation(player, shop, quantity, onConfirm, onCancel);
+        plugin.getNotificationManager().notifyOwner(shop, player, "SELL", quantity, totalPrice);
+    }
+
+    // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
+
+    private void toggleFavorite(Player player, Shop shop) {
+        try {
+            boolean isFav = plugin.getDatabaseManager().getPlayerDataRepository()
+                    .isFavorite(player.getUniqueId(), shop.getId());
+            if (isFav) {
+                plugin.getDatabaseManager().getPlayerDataRepository()
+                        .removeFavorite(player.getUniqueId(), shop.getId());
+                MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("favorite-removed"));
+            } else {
+                plugin.getDatabaseManager().getPlayerDataRepository()
+                        .addFavorite(player.getUniqueId(), shop.getId());
+                MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("favorite-added"));
+            }
+        } catch (Exception ignored) {}
     }
 
     private boolean isOwnerOrTrusted(Player player, Shop shop) {
