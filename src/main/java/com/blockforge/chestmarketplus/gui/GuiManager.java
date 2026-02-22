@@ -71,6 +71,17 @@ public class GuiManager {
         activeGuis.remove(player.getUniqueId());
     }
 
+    public void openCreationGui(Player player, ShopCreationGui gui) {
+        gui.open();
+        activeGuis.put(player.getUniqueId(), new ActiveGui(gui, gui::handleClick));
+    }
+
+    public void openConfigGui(Player player) {
+        ConfigGui gui = new ConfigGui(plugin, player);
+        gui.open();
+        activeGuis.put(player.getUniqueId(), new ActiveGui(gui, gui::handleClick));
+    }
+
     public void closeAll() {
         activeGuis.clear();
     }
