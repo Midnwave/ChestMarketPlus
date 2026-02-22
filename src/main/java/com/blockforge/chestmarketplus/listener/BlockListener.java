@@ -39,15 +39,22 @@ public class BlockListener implements Listener {
 
         if (shop == null) return;
 
+        event.setCancelled(true);
+
         if (!player.getUniqueId().equals(shop.getOwnerUuid())
                 && !player.hasPermission("chestmarket.admin.delete")) {
             MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("cannot-break-shop"));
-            event.setCancelled(true);
             return;
         }
 
-        plugin.getShopManager().deleteShop(shop.getId());
-        MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("shop-deleted"));
+        final Shop targetShop = shop;
+        plugin.getGuiManager().openConfirmationGui(player,
+                MessageUtils.colorize("&cDelete this shop?"), shop, 0,
+                () -> {
+                    plugin.getShopManager().deleteShop(targetShop.getId());
+                    MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("shop-deleted"));
+                },
+                () -> MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("transaction-cancelled")));
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
