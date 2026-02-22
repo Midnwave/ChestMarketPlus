@@ -19,6 +19,10 @@ commands:
       - chestmarket
       - cmarket
       - chestmarketplus
+      - cshop
+      - cs
+      - shop
+      - market
 
 permissions:
   chestmarket.use:
@@ -74,6 +78,9 @@ permissions:
     default: op
   chestmarket.admin.reload:
     description: Reload plugin configuration
+    default: op
+  chestmarket.admin.config:
+    description: Open the in-game config GUI
     default: op
   chestmarket.notify.update:
     description: Receive update notifications
