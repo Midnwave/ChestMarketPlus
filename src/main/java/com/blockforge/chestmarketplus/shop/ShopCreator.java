@@ -24,16 +24,21 @@ public class ShopCreator {
 
     public CreateResult createFromCommand(Player player, ShopType type, double buyPrice, double sellPrice,
                                           Location chestLoc, Location signLoc) {
-        return createShop(player, type, buyPrice, sellPrice, chestLoc, signLoc);
+        return createShop(player, type, buyPrice, sellPrice, chestLoc, signLoc, null);
     }
 
     public CreateResult createFromSign(Player player, ShopType type, double buyPrice, double sellPrice,
                                        Location chestLoc, Location signLoc) {
-        return createShop(player, type, buyPrice, sellPrice, chestLoc, signLoc);
+        return createShop(player, type, buyPrice, sellPrice, chestLoc, signLoc, null);
+    }
+
+    public CreateResult createFromSign(Player player, ShopType type, double buyPrice, double sellPrice,
+                                       Location chestLoc, Location signLoc, ItemStack itemOverride) {
+        return createShop(player, type, buyPrice, sellPrice, chestLoc, signLoc, itemOverride);
     }
 
     private CreateResult createShop(Player player, ShopType type, double buyPrice, double sellPrice,
-                                     Location chestLoc, Location signLoc) {
+                                     Location chestLoc, Location signLoc, ItemStack itemOverride) {
         Settings settings = plugin.getConfigManager().getSettings();
 
         if (!player.hasPermission("chestmarket.create")) {
@@ -69,7 +74,7 @@ public class ShopCreator {
             return CreateResult.error(plugin.getLocaleManager().getPrefixedMessage("shop-already-exists"));
         }
 
-        ItemStack itemInHand = player.getInventory().getItemInMainHand();
+        ItemStack itemInHand = itemOverride != null ? itemOverride : player.getInventory().getItemInMainHand();
         if (itemInHand.getType() == Material.AIR) {
             return CreateResult.error(plugin.getLocaleManager().getPrefixedMessage("hold-item"));
         }
