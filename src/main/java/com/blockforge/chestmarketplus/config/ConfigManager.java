@@ -45,6 +45,7 @@ public class ConfigManager {
         s.setGlobalMaxPrice(config.getDouble("shops.global-max-price", 1000000.0));
         s.setChatInputTimeout(config.getInt("shops.chat-input-timeout", 30));
         s.setAllowAllQuantity(config.getBoolean("shops.allow-all-quantity", true));
+        s.setPartialSellWhenLowFunds(config.getBoolean("shops.partial-sell-when-low-funds", false));
 
         s.setExpiryEnabled(config.getBoolean("expiry.enabled", true));
         s.setExpiryDurationDays(config.getInt("expiry.duration-days", 30));

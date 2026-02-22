@@ -25,6 +25,7 @@ public class Settings {
     private double globalMaxPrice;
     private int chatInputTimeout;
     private boolean allowAllQuantity;
+    private boolean partialSellWhenLowFunds;
 
     private boolean expiryEnabled;
     private int expiryDurationDays;
@@ -124,6 +125,9 @@ public class Settings {
 
     public boolean isAllowAllQuantity() { return allowAllQuantity; }
     public void setAllowAllQuantity(boolean allowAllQuantity) { this.allowAllQuantity = allowAllQuantity; }
+
+    public boolean isPartialSellWhenLowFunds() { return partialSellWhenLowFunds; }
+    public void setPartialSellWhenLowFunds(boolean partialSellWhenLowFunds) { this.partialSellWhenLowFunds = partialSellWhenLowFunds; }
 
     public boolean isExpiryEnabled() { return expiryEnabled; }
     public void setExpiryEnabled(boolean expiryEnabled) { this.expiryEnabled = expiryEnabled; }

@@ -39,6 +39,10 @@ shops:
   chat-input-timeout: 30
   # if true, players may type 'all' to buy/sell the maximum available quantity
   allow-all-quantity: true
+  # if true and the shop owner has insufficient funds when a player sells,
+  # the sale completes and the player is paid whatever the owner has left;
+  # if false (default) the sale is blocked with an owner-no-funds error
+  partial-sell-when-low-funds: false
 
 expiry:
   enabled: true

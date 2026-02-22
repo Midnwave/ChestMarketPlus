@@ -2,6 +2,7 @@ package com.blockforge.chestmarketplus.gui;
 
 import com.blockforge.chestmarketplus.ChestMarketPlus;
 import com.blockforge.chestmarketplus.api.Shop;
+import com.blockforge.chestmarketplus.util.ItemUtils;
 import com.blockforge.chestmarketplus.util.MessageUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -21,8 +22,10 @@ public class QuantitySelectorGui {
     private final Shop shop;
     private final boolean isBuying;
     private final BiConsumer<Player, Integer> onSelect;
+    private final int maxQty;
     private Inventory inventory;
 
+    // Row 2 slots (middle row) for preset amounts
     private static final int[] QUANTITY_SLOTS = {10, 11, 12, 13, 14, 15, 16};
     private static final int[] QUANTITIES = {1, 8, 16, 32, 64, 128, 256};
 
@@ -33,6 +36,12 @@ public class QuantitySelectorGui {
         this.shop = shop;
         this.isBuying = isBuying;
         this.onSelect = onSelect;
+
+        if (isBuying) {
+            this.maxQty = shop.isAdmin() ? 64 : shop.getCurrentStock();
+        } else {
+            this.maxQty = ItemUtils.countMatchingItems(player.getInventory(), shop.getItemTemplate());
+        }
     }
 
     public void open() {
@@ -45,8 +54,14 @@ public class QuantitySelectorGui {
         }
 
         double pricePerItem = isBuying ? shop.getBuyPrice() : shop.getSellPrice();
-        String priceFormat = plugin.getConfigManager().getSettings().getCurrencySymbol();
 
+        // Slot 4 (top center): custom amount via chat input
+        ItemStack customBtn = createItem(Material.WRITABLE_BOOK,
+                MessageUtils.colorize("<aqua><bold>Custom Amount"),
+                MessageUtils.colorize("<gray>Click to type any quantity in chat"));
+        inventory.setItem(4, customBtn);
+
+        // Middle row: preset amounts
         for (int i = 0; i < QUANTITY_SLOTS.length; i++) {
             int qty = QUANTITIES[i];
             double total = pricePerItem * qty;
@@ -59,8 +74,17 @@ public class QuantitySelectorGui {
             inventory.setItem(QUANTITY_SLOTS[i], item);
         }
 
+        // Slot 22: cancel
         ItemStack cancel = createItem(Material.BARRIER, MessageUtils.colorize("<red><bold>Cancel"));
         inventory.setItem(22, cancel);
+
+        // Slot 26: buy/sell ALL (respects allow-all-quantity config)
+        if (plugin.getConfigManager().getSettings().isAllowAllQuantity() && maxQty > 0) {
+            ItemStack allBtn = createItem(Material.EMERALD,
+                    MessageUtils.colorize("<green><bold>All (" + maxQty + "x)"),
+                    MessageUtils.colorize("<gray>Total: <gold>" + plugin.getConfigManager().getSettings().formatPrice(pricePerItem * maxQty)));
+            inventory.setItem(26, allBtn);
+        }
 
         player.openInventory(inventory);
     }
@@ -73,6 +97,37 @@ public class QuantitySelectorGui {
             return;
         }
 
+        // Custom amount — close GUI and await chat input
+        if (slot == 4) {
+            player.closeInventory();
+            int max = maxQty;
+            MessageUtils.sendMessage(player, MessageUtils.colorize(
+                    "<yellow>Enter a custom quantity <gray>(1-" + max + ") or type <white>cancel<gray>:"));
+            plugin.getChatInputListener().awaitInput(player, input -> {
+                if ("cancel".equalsIgnoreCase(input)) return;
+                try {
+                    int qty = Integer.parseInt(input.trim());
+                    if (qty <= 0 || qty > max) {
+                        MessageUtils.sendMessage(player, MessageUtils.colorize(
+                                "<red>Quantity must be between 1 and " + max + "."));
+                        return;
+                    }
+                    Bukkit.getScheduler().runTask(plugin, () -> onSelect.accept(player, qty));
+                } catch (NumberFormatException e) {
+                    MessageUtils.sendMessage(player, MessageUtils.colorize("<red>Invalid number."));
+                }
+            });
+            return;
+        }
+
+        // All button
+        if (slot == 26 && plugin.getConfigManager().getSettings().isAllowAllQuantity() && maxQty > 0) {
+            player.closeInventory();
+            Bukkit.getScheduler().runTask(plugin, () -> onSelect.accept(player, maxQty));
+            return;
+        }
+
+        // Preset amounts
         for (int i = 0; i < QUANTITY_SLOTS.length; i++) {
             if (slot == QUANTITY_SLOTS[i]) {
                 int qty = QUANTITIES[i];

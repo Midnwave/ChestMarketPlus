@@ -198,13 +198,6 @@ public class ShopInteractListener implements Listener {
         Runnable onCancel = () -> MessageUtils.sendMessage(player,
                 plugin.getLocaleManager().getPrefixedMessage("transaction-cancelled"));
 
-        if (plugin.getPlatformDetector().hasDialogAPI()) {
-            try {
-                new com.blockforge.chestmarketplus.dialog.PaperDialogProvider(plugin)
-                        .showBuyConfirmation(player, shop, quantity, onConfirm, onCancel);
-                return;
-            } catch (Exception ignored) {}
-        }
         plugin.getGuiManager().openConfirmationGui(player, "Confirm Purchase", shop, quantity, onConfirm, onCancel);
     }
 
@@ -267,22 +260,41 @@ public class ShopInteractListener implements Listener {
         double tax = player.hasPermission("chestmarket.bypass.tax") ? 0 : totalPrice * (settings.getTaxRate() / 100.0);
         double playerReceives = totalPrice - tax;
 
-        if (!shop.isAdmin() && !plugin.getEconomyProvider().has(
-                org.bukkit.Bukkit.getOfflinePlayer(shop.getOwnerUuid()), totalPrice)) {
+        // Block only if partial-sell is disabled and owner can't pay
+        if (!shop.isAdmin() && !settings.isPartialSellWhenLowFunds()
+                && !plugin.getEconomyProvider().has(org.bukkit.Bukkit.getOfflinePlayer(shop.getOwnerUuid()), totalPrice)) {
             MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("owner-no-funds"));
             return;
         }
 
         Runnable onConfirm = () -> {
+            // Re-check owner balance at execution time; apply partial payment if configured
+            double actualTotal = totalPrice;
+            double actualTax = tax;
+            double actualReceives = playerReceives;
+            if (!shop.isAdmin()) {
+                double ownerBal = plugin.getEconomyProvider().getBalance(
+                        org.bukkit.Bukkit.getOfflinePlayer(shop.getOwnerUuid()));
+                if (ownerBal < actualTotal) {
+                    if (!settings.isPartialSellWhenLowFunds()) {
+                        MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("owner-no-funds"));
+                        return;
+                    }
+                    actualTotal = ownerBal;
+                    actualTax = player.hasPermission("chestmarket.bypass.tax") ? 0 : actualTotal * (settings.getTaxRate() / 100.0);
+                    actualReceives = actualTotal - actualTax;
+                }
+            }
+
             int removed = ItemUtils.removeMatchingItems(player.getInventory(), shop.getItemTemplate(), quantity);
             if (removed < quantity) {
                 MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("transaction-failed"));
                 return;
             }
-            plugin.getEconomyProvider().deposit(player, playerReceives);
+            plugin.getEconomyProvider().deposit(player, actualReceives);
             if (!shop.isAdmin()) {
                 plugin.getEconomyProvider().withdraw(
-                        org.bukkit.Bukkit.getOfflinePlayer(shop.getOwnerUuid()), totalPrice);
+                        org.bukkit.Bukkit.getOfflinePlayer(shop.getOwnerUuid()), actualTotal);
                 var inv = StockManager.getShopInventory(shop);
                 if (inv != null) ItemUtils.addItems(inv, shop.getItemTemplate(), quantity);
             }
@@ -292,7 +304,7 @@ public class ShopInteractListener implements Listener {
                 com.blockforge.chestmarketplus.api.ShopTransaction tx =
                         new com.blockforge.chestmarketplus.api.ShopTransaction(
                                 shop.getId(), player.getUniqueId(), player.getName(),
-                                "SELL", shop.getItemTemplate().getType().name(), quantity, totalPrice, tax);
+                                "SELL", shop.getItemTemplate().getType().name(), quantity, actualTotal, actualTax);
                 plugin.getDatabaseManager().getTransactionRepository().logTransaction(tx);
             } catch (Exception ignored) {}
             try {
@@ -302,20 +314,13 @@ public class ShopInteractListener implements Listener {
             String itemName = ItemUtils.getDisplayName(shop.getItemTemplate());
             MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("shop-sell-success",
                     "{quantity}", String.valueOf(quantity), "{item}", itemName,
-                    "{price}", settings.formatPrice(playerReceives)));
-            plugin.getNotificationManager().notifyOwner(shop, player, "SELL", quantity, totalPrice);
+                    "{price}", settings.formatPrice(actualReceives)));
+            plugin.getNotificationManager().notifyOwner(shop, player, "SELL", quantity, actualTotal);
         };
 
         Runnable onCancel = () -> MessageUtils.sendMessage(player,
                 plugin.getLocaleManager().getPrefixedMessage("transaction-cancelled"));
 
-        if (plugin.getPlatformDetector().hasDialogAPI()) {
-            try {
-                new com.blockforge.chestmarketplus.dialog.PaperDialogProvider(plugin)
-                        .showSellConfirmation(player, shop, quantity, onConfirm, onCancel);
-                return;
-            } catch (Exception ignored) {}
-        }
         plugin.getGuiManager().openConfirmationGui(player, "Confirm Sale", shop, quantity, onConfirm, onCancel);
     }
 

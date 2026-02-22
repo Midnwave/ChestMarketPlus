@@ -27,8 +27,10 @@ public class GuiManager {
     public void openConfirmationGui(Player player, String title, Shop shop, int quantity,
                                      Runnable onConfirm, Runnable onCancel) {
         ConfirmationGui gui = new ConfirmationGui(plugin, player, title, shop, quantity, onConfirm, onCancel);
-        gui.open();
         activeGuis.put(player.getUniqueId(), new ActiveGui(gui, gui::handleClick, null));
+        // Delay 1 tick so the client can process any prior inventory-close packet
+        // before we send the open-window packet for the confirmation GUI.
+        org.bukkit.Bukkit.getScheduler().runTask(plugin, gui::open);
     }
 
     public void openQuantitySelector(Player player, Shop shop, boolean isBuying,
