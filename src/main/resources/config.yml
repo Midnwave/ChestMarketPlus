@@ -1,3 +1,9 @@
+# do not change this manually
+config-version: 1
+
+# shown before all plugin messages, supports MiniMessage
+prefix: "<gray>[<gold>ChestMarket+<gray>] "
+
 # language file to use (from locale/ folder without .yml)
 language: en_US
 
@@ -48,6 +54,8 @@ display:
 
 signs:
   auto-color: true
+  # if true players must be crouching to create a shop via sign
+  require-crouch: false
   buy-color: "<green>"
   sell-color: "<red>"
   both-color: "<yellow>"
