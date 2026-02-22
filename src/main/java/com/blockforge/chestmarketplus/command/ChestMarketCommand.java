@@ -62,6 +62,7 @@ public class ChestMarketCommand implements CommandExecutor, TabCompleter {
             case "holograms" -> handleHolograms(sender, args);
             case "admin" -> handleAdmin(sender, args);
             case "reload" -> handleReload(sender);
+            case "config" -> handleConfig(sender);
             default -> sendMessage(sender, plugin.getLocaleManager().getPrefixedMessage("unknown-command"));
         }
 
@@ -631,37 +632,54 @@ public class ChestMarketCommand implements CommandExecutor, TabCompleter {
         sendMessage(sender, plugin.getLocaleManager().getPrefixedMessage("config-reloaded"));
     }
 
-    private void sendHelp(CommandSender sender, int page) {
-        List<String> lines = new ArrayList<>();
-        lines.add("&8&m                                    ");
-        lines.add("&6&lChestMarket+ Help &7(Page {page})");
-        lines.add("");
-        lines.add("&e/cm create <buy|sell|both> <price> [sellPrice] &7- Create a shop");
-        lines.add("&e/cm delete &7- Delete your shop (look at it)");
-        lines.add("&e/cm setprice <buy|sell> <price> &7- Update price");
-        lines.add("&e/cm transfer <player> &7- Transfer shop ownership");
-        lines.add("&e/cm trust <player> &7- Trust a player to access chest");
-        lines.add("&e/cm untrust <player> &7- Untrust a player");
-        lines.add("&e/cm info &7- View shop info (look at it)");
-        lines.add("&e/cm log [page] &7- View transaction log");
-        lines.add("&e/cm favorites &7- Open favorites GUI");
-        lines.add("&e/cm follow / unfollow &7- Follow/unfollow a shop");
-        lines.add("&e/cm notify [on|off] &7- Toggle notifications");
-        lines.add("&e/cm holograms [on|off] &7- Toggle hologram visibility");
-        lines.add("&e/cm help [page] &7- Show this help");
-        lines.add("");
-        lines.add("&6Admin: &e/cm admin <subcommand>");
-        lines.add("&8&m                                    ");
+    private void handleConfig(CommandSender sender) {
+        if (!(sender instanceof Player player)) {
+            sendMessage(sender, plugin.getLocaleManager().getPrefixedMessage("player-only"));
+            return;
+        }
+        if (!sender.hasPermission("chestmarket.admin.config")) {
+            sendMessage(sender, plugin.getLocaleManager().getPrefixedMessage("no-permission"));
+            return;
+        }
+        plugin.getGuiManager().openConfigGui(player);
+    }
 
-        int perPage = 10;
-        int maxPage = (lines.size() + perPage - 1) / perPage;
+    private void sendHelp(CommandSender sender, int page) {
+        boolean isAdmin = hasAnyAdminPerm(sender);
+        int maxPage = isAdmin ? 2 : 1;
         page = Math.max(1, Math.min(page, maxPage));
 
-        int start = (page - 1) * perPage;
-        int end = Math.min(start + perPage, lines.size());
-
-        for (int i = start; i < end; i++) {
-            sendMessage(sender, lines.get(i).replace("{page}", page + "/" + maxPage));
+        if (page == 1) {
+            sendMessage(sender, "&8&m------------------------------------");
+            sendMessage(sender, "&6&lChestMarket+ &7Player Commands");
+            sendMessage(sender, "&e/cm create <buy|sell|both> <price> &7- Create a shop");
+            sendMessage(sender, "&e/cm delete &7- Delete your shop");
+            sendMessage(sender, "&e/cm setprice <buy|sell> <price> &7- Update price");
+            sendMessage(sender, "&e/cm transfer <player> &7- Transfer ownership");
+            sendMessage(sender, "&e/cm trust / untrust <player> &7- Manage access");
+            sendMessage(sender, "&e/cm info &7- View shop info");
+            sendMessage(sender, "&e/cm log [page] &7- Transaction log");
+            sendMessage(sender, "&e/cm favorites &7- Open favorites");
+            sendMessage(sender, "&e/cm follow / unfollow &7- Follow a shop");
+            sendMessage(sender, "&e/cm notify [on|off] &7- Toggle notifications");
+            sendMessage(sender, "&e/cm holograms [on|off] &7- Toggle holograms");
+            if (isAdmin) sendMessage(sender, "&7Type &e/cm help 2 &7for admin commands");
+            sendMessage(sender, "&8&m------------------------------------");
+        } else if (page == 2 && isAdmin) {
+            sendMessage(sender, "&8&m------------------------------------");
+            sendMessage(sender, "&6&lChestMarket+ &7Admin Commands");
+            sendMessage(sender, "&e/cm admin delete <shopId> &7- Force-delete shop");
+            sendMessage(sender, "&e/cm admin edit <shopId> &7- Edit any shop");
+            sendMessage(sender, "&e/cm admin setprice <id> <type> <price>");
+            sendMessage(sender, "&e/cm admin list [player] &7- List shops");
+            sendMessage(sender, "&e/cm admin freeze/unfreeze <player>");
+            sendMessage(sender, "&e/cm admin tp <shopId> &7- Teleport to shop");
+            sendMessage(sender, "&e/cm admin forcerestock <shopId>");
+            sendMessage(sender, "&e/cm admin info <shopId> &7- Detailed shop info");
+            sendMessage(sender, "&e/cm admin stats &7- Server economy stats");
+            sendMessage(sender, "&e/cm reload &7- Reload configuration");
+            sendMessage(sender, "&e/cm config &7- Open config GUI");
+            sendMessage(sender, "&8&m------------------------------------");
         }
     }
 
@@ -672,16 +690,20 @@ public class ChestMarketCommand implements CommandExecutor, TabCompleter {
         if (args.length == 1) {
             completions.addAll(List.of("help", "create", "delete", "setprice", "transfer", "trust", "untrust",
                     "info", "log", "favorites", "follow", "unfollow", "notify", "holograms"));
-            if (sender.hasPermission("chestmarket.admin.reload")) {
-                completions.addAll(List.of("admin", "reload"));
-            }
+            if (hasAnyAdminPerm(sender)) completions.add("admin");
+            if (sender.hasPermission("chestmarket.admin.reload")) completions.add("reload");
+            if (sender.hasPermission("chestmarket.admin.config")) completions.add("config");
         } else if (args.length == 2) {
             switch (args[0].toLowerCase()) {
                 case "create" -> completions.addAll(List.of("buy", "sell", "both"));
                 case "setprice" -> completions.addAll(List.of("buy", "sell"));
                 case "transfer", "trust", "untrust" -> completions.addAll(getOnlinePlayerNames());
                 case "notify", "holograms" -> completions.addAll(List.of("on", "off"));
-                case "help", "log" -> completions.addAll(List.of("1", "2", "3"));
+                case "help" -> {
+                    completions.add("1");
+                    if (hasAnyAdminPerm(sender)) completions.add("2");
+                }
+                case "log" -> completions.addAll(List.of("1", "2", "3"));
                 case "admin" -> {
                     if (sender.hasPermission("chestmarket.admin.delete"))
                         completions.add("delete");
@@ -721,6 +743,20 @@ public class ChestMarketCommand implements CommandExecutor, TabCompleter {
                 .filter(s -> s.toLowerCase().startsWith(lastArg))
                 .sorted()
                 .collect(Collectors.toList());
+    }
+
+    private boolean hasAnyAdminPerm(CommandSender sender) {
+        return sender.hasPermission("chestmarket.admin.delete")
+                || sender.hasPermission("chestmarket.admin.edit")
+                || sender.hasPermission("chestmarket.admin.setprice")
+                || sender.hasPermission("chestmarket.admin.list")
+                || sender.hasPermission("chestmarket.admin.freeze")
+                || sender.hasPermission("chestmarket.admin.tp")
+                || sender.hasPermission("chestmarket.admin.restock")
+                || sender.hasPermission("chestmarket.admin.info")
+                || sender.hasPermission("chestmarket.admin.stats")
+                || sender.hasPermission("chestmarket.admin.reload")
+                || sender.hasPermission("chestmarket.admin.config");
     }
 
     private Shop getTargetShop(Player player) {
@@ -763,7 +799,7 @@ public class ChestMarketCommand implements CommandExecutor, TabCompleter {
         };
 
         String itemName = ItemUtils.getDisplayName(shop.getItemTemplate());
-        sign.setLine(0, MessageUtils.colorize(colorTag + "[ChestMarket+]"));
+        sign.setLine(0, MessageUtils.colorize(colorTag + shop.getOwnerName()));
         sign.setLine(1, MessageUtils.colorize("<white>" + (itemName.length() > 15 ? itemName.substring(0, 13) + ".." : itemName)));
         sign.setLine(2, shop.getBuyPrice() != null
                 ? MessageUtils.colorize("<green>B: " + settings.formatPrice(shop.getBuyPrice()))
