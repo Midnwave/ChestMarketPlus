@@ -44,6 +44,7 @@ public final class ChestMarketPlus extends JavaPlugin {
     private ShopExpiry shopExpiry;
     private UpdateChecker updateChecker;
     private ChatInputListener chatInputListener;
+    private ShopInteractListener shopInteractListener;
 
     @Override
     public void onEnable() {
@@ -148,7 +149,8 @@ public final class ChestMarketPlus extends JavaPlugin {
         chatInputListener = new ChatInputListener(this);
         pm.registerEvents(chatInputListener, this);
         pm.registerEvents(new SignListener(this), this);
-        pm.registerEvents(new ShopInteractListener(this), this);
+        shopInteractListener = new ShopInteractListener(this);
+        pm.registerEvents(shopInteractListener, this);
         pm.registerEvents(new ChestListener(this), this);
         pm.registerEvents(new BlockListener(this), this);
         pm.registerEvents(new PlayerListener(this), this);
@@ -176,4 +178,5 @@ public final class ChestMarketPlus extends JavaPlugin {
     public ShopExpiry getShopExpiry() { return shopExpiry; }
     public UpdateChecker getUpdateChecker() { return updateChecker; }
     public ChatInputListener getChatInputListener() { return chatInputListener; }
+    public ShopInteractListener getShopInteractListener() { return shopInteractListener; }
 }

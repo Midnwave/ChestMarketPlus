@@ -87,7 +87,8 @@ public class FavoritesGui {
         if (slot >= 0 && slot < favoriteShops.size()) {
             Shop shop = favoriteShops.get(slot);
             player.closeInventory();
-            plugin.getGuiManager().openShopGui(player, shop);
+            org.bukkit.Bukkit.getScheduler().runTask(plugin, () ->
+                    plugin.getShopInteractListener().openShopInteraction(player, shop));
         }
     }
 }

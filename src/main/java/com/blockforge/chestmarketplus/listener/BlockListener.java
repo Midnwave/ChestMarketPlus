@@ -68,8 +68,7 @@ public class BlockListener implements Listener {
         }
 
         final Shop targetShop = shop;
-        plugin.getGuiManager().openConfirmationGui(player,
-                MessageUtils.colorize("&cDelete this shop?"), shop, 0,
+        plugin.getDialogProvider().showDeleteConfirmation(player, targetShop,
                 () -> {
                     plugin.getShopManager().deleteShop(targetShop.getId());
                     MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("shop-deleted"));

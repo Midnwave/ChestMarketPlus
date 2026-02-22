@@ -489,7 +489,7 @@ public class ChestMarketCommand implements CommandExecutor, TabCompleter {
             sendMessage(sender, plugin.getLocaleManager().getPrefixedMessage("shop-not-found"));
             return;
         }
-        plugin.getGuiManager().openShopGui(player, shop);
+        plugin.getShopInteractListener().openShopInteraction(player, shop);
     }
 
     private void handleAdminSetPrice(CommandSender sender, String[] args) {
