@@ -39,6 +39,7 @@ public final class ChestMarketPlus extends JavaPlugin {
     private RatingManager ratingManager;
     private ShopExpiry shopExpiry;
     private UpdateChecker updateChecker;
+    private ChatInputListener chatInputListener;
 
     @Override
     public void onEnable() {
@@ -138,6 +139,8 @@ public final class ChestMarketPlus extends JavaPlugin {
 
     private void registerListeners() {
         var pm = getServer().getPluginManager();
+        chatInputListener = new ChatInputListener(this);
+        pm.registerEvents(chatInputListener, this);
         pm.registerEvents(new SignListener(this), this);
         pm.registerEvents(new ShopInteractListener(this), this);
         pm.registerEvents(new ChestListener(this), this);
@@ -165,4 +168,5 @@ public final class ChestMarketPlus extends JavaPlugin {
     public RatingManager getRatingManager() { return ratingManager; }
     public ShopExpiry getShopExpiry() { return shopExpiry; }
     public UpdateChecker getUpdateChecker() { return updateChecker; }
+    public ChatInputListener getChatInputListener() { return chatInputListener; }
 }
