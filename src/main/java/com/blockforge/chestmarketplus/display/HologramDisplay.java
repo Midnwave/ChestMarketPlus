@@ -52,7 +52,7 @@ public class HologramDisplay {
 
             textDisplay = chestLoc.getWorld().spawnEntity(textLoc, EntityType.TEXT_DISPLAY);
             if (textDisplay instanceof org.bukkit.entity.TextDisplay td) {
-                td.setText(buildDisplayText());
+                td.setText(MessageUtils.colorize(buildDisplayText()));
                 td.setBillboard(org.bukkit.entity.Display.Billboard.VERTICAL);
                 td.setSeeThrough(false);
                 td.setDefaultBackground(false);
@@ -92,7 +92,7 @@ public class HologramDisplay {
 
         nameStand = (ArmorStand) chestLoc.getWorld().spawnEntity(nameLoc, EntityType.ARMOR_STAND);
         configureArmorStand(nameStand);
-        nameStand.setCustomName(MessageUtils.colorize("<gray>" + shop.getOwnerName()));
+        nameStand.setCustomName(MessageUtils.colorize("&7" + shop.getOwnerName()));
         nameStand.setCustomNameVisible(true);
 
         Location itemLoc = chestLoc.clone().add(0.5, 2.3, 0.5);
@@ -120,7 +120,7 @@ public class HologramDisplay {
         String text = buildDisplayText();
 
         if (useDisplayEntities && textDisplay instanceof org.bukkit.entity.TextDisplay td) {
-            td.setText(text);
+            td.setText(MessageUtils.colorize(text));
 
             if (itemDisplay instanceof org.bukkit.entity.ItemDisplay id) {
                 if (shop.isOutOfStock() && !shop.isAdmin()) {
@@ -168,7 +168,7 @@ public class HologramDisplay {
         String itemName = ItemUtils.getDisplayName(shop.getItemTemplate());
 
         if (shop.isOutOfStock() && !shop.isAdmin()) {
-            return settings.getOutOfStockText() + "\n"
+            return MessageUtils.colorize(settings.getOutOfStockText()) + "\n"
                     + MessageUtils.colorize("<gray>" + itemName + "\n")
                     + MessageUtils.colorize("<gray>" + shop.getOwnerName());
         }
