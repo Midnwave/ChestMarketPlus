@@ -158,9 +158,7 @@ public class ShopGui {
         Runnable onConfirm = () -> executeBuy(player, finalQuantity, totalPrice, tax);
         Runnable onCancel = () -> MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("transaction-cancelled"));
 
-        // Always use the chest confirmation GUI (1-tick delay so the client processes
-        // any prior inventory close before we open the new one)
-        plugin.getGuiManager().openConfirmationGui(player, "Confirm Purchase", shop, finalQuantity, onConfirm, onCancel);
+        plugin.getDialogProvider().showBuyConfirmation(player, shop, finalQuantity, onConfirm, onCancel);
     }
 
     private void executeBuy(Player player, int quantity, double totalPrice, double tax) {
@@ -249,7 +247,7 @@ public class ShopGui {
         Runnable onConfirm = () -> executeSell(player, finalQuantity, totalPrice, tax, playerReceives);
         Runnable onCancel = () -> MessageUtils.sendMessage(player, plugin.getLocaleManager().getPrefixedMessage("transaction-cancelled"));
 
-        plugin.getGuiManager().openConfirmationGui(player, "Confirm Sale", shop, finalQuantity, onConfirm, onCancel);
+        plugin.getDialogProvider().showSellConfirmation(player, shop, finalQuantity, onConfirm, onCancel);
     }
 
     private void executeSell(Player player, int quantity, double totalPrice, double tax, double playerReceives) {

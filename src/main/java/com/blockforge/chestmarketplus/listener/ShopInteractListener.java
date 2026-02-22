@@ -198,7 +198,7 @@ public class ShopInteractListener implements Listener {
         Runnable onCancel = () -> MessageUtils.sendMessage(player,
                 plugin.getLocaleManager().getPrefixedMessage("transaction-cancelled"));
 
-        plugin.getGuiManager().openConfirmationGui(player, "Confirm Purchase", shop, quantity, onConfirm, onCancel);
+        plugin.getDialogProvider().showBuyConfirmation(player, shop, quantity, onConfirm, onCancel);
     }
 
     private void startSellFlow(Player player, Shop shop) {
@@ -321,7 +321,7 @@ public class ShopInteractListener implements Listener {
         Runnable onCancel = () -> MessageUtils.sendMessage(player,
                 plugin.getLocaleManager().getPrefixedMessage("transaction-cancelled"));
 
-        plugin.getGuiManager().openConfirmationGui(player, "Confirm Sale", shop, quantity, onConfirm, onCancel);
+        plugin.getDialogProvider().showSellConfirmation(player, shop, quantity, onConfirm, onCancel);
     }
 
     private boolean isOwnerOrTrusted(Player player, Shop shop) {

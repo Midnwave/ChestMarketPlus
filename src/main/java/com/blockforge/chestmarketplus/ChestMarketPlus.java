@@ -4,6 +4,9 @@ import com.blockforge.chestmarketplus.command.CommandManager;
 import com.blockforge.chestmarketplus.config.ConfigManager;
 import com.blockforge.chestmarketplus.config.LocaleManager;
 import com.blockforge.chestmarketplus.database.DatabaseManager;
+import com.blockforge.chestmarketplus.dialog.DialogProvider;
+import com.blockforge.chestmarketplus.dialog.InventoryDialogProvider;
+import com.blockforge.chestmarketplus.dialog.PaperDialogProvider;
 import com.blockforge.chestmarketplus.display.DisplayManager;
 import com.blockforge.chestmarketplus.economy.EconomyProvider;
 import com.blockforge.chestmarketplus.gui.GuiManager;
@@ -25,6 +28,7 @@ public final class ChestMarketPlus extends JavaPlugin {
     private static ChestMarketPlus instance;
 
     private PlatformDetector platformDetector;
+    private DialogProvider dialogProvider;
     private ConfigManager configManager;
     private LocaleManager localeManager;
     private DatabaseManager databaseManager;
@@ -48,8 +52,10 @@ public final class ChestMarketPlus extends JavaPlugin {
         platformDetector = new PlatformDetector(this);
         getLogger().info("Detected platform: " + platformDetector.getPlatformName());
         if (platformDetector.hasDialogAPI()) {
+            dialogProvider = new PaperDialogProvider(this);
             getLogger().info("Paper Dialog API detected - using native dialogs");
         } else {
+            dialogProvider = new InventoryDialogProvider(this);
             getLogger().info("Dialog API not available - using inventory GUI fallback");
         }
 
@@ -154,6 +160,7 @@ public final class ChestMarketPlus extends JavaPlugin {
     }
 
     public PlatformDetector getPlatformDetector() { return platformDetector; }
+    public DialogProvider getDialogProvider() { return dialogProvider; }
     public ConfigManager getConfigManager() { return configManager; }
     public LocaleManager getLocaleManager() { return localeManager; }
     public DatabaseManager getDatabaseManager() { return databaseManager; }

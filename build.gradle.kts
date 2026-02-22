@@ -16,7 +16,7 @@ repositories {
 }
 
 dependencies {
-    compileOnly("io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT")
+    compileOnly("io.papermc.paper:paper-api:1.21.8-R0.1-SNAPSHOT")
 
     compileOnly("com.github.MilkBowl:VaultAPI:1.7.1") {
         exclude(group = "org.bukkit")
