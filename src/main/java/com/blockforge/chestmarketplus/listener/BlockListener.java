@@ -43,10 +43,20 @@ public class BlockListener implements Listener {
 
         event.setCancelled(true);
 
-        // Restore sign text to client next tick so it doesn't show as blank
+        // When a break is cancelled the client visually removes the block but Bukkit does NOT
+        // automatically resend the tile-entity (sign text) data. Force it next tick via both
+        // sign.update() (all nearby players) and sendSignChange (the breaking player directly).
         if (isSign) {
             final Block signBlock = block;
-            plugin.getServer().getScheduler().runTask(plugin, () -> signBlock.getState().update(true, false));
+            final Player signingPlayer = player;
+            plugin.getServer().getScheduler().runTask(plugin, () -> {
+                if (signBlock.getState() instanceof Sign sign) {
+                    sign.update(true, false);
+                    try {
+                        signingPlayer.sendSignChange(sign.getLocation(), sign.getLines());
+                    } catch (Exception ignored) {}
+                }
+            });
         }
 
         if (!player.getUniqueId().equals(shop.getOwnerUuid())
