@@ -43,6 +43,7 @@ public class ConfigManager {
         s.setTaxRate(config.getDouble("shops.tax-rate", 5.0));
         s.setGlobalMinPrice(config.getDouble("shops.global-min-price", 0.01));
         s.setGlobalMaxPrice(config.getDouble("shops.global-max-price", 1000000.0));
+        s.setChatInputTimeout(config.getInt("shops.chat-input-timeout", 30));
 
         s.setExpiryEnabled(config.getBoolean("expiry.enabled", true));
         s.setExpiryDurationDays(config.getInt("expiry.duration-days", 30));

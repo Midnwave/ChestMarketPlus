@@ -77,3 +77,4 @@ update-available: "<yellow>A new version of ChestMarket+ is available! <white>{v
 
 item-updated: "<green>Shop item updated to <white>{item}<green>!"
 chest-peek-disabled: "<red>Chest previews are disabled on this server."
+chat-input-timeout: "<red>Input prompt expired. Interact with the shop again to try."

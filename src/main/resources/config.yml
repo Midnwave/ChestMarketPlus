@@ -35,6 +35,8 @@ shops:
   tax-rate: 5.0
   global-min-price: 0.01
   global-max-price: 1000000.0
+  # seconds before a pending chat-input prompt (quantity entry) expires, 0 to disable
+  chat-input-timeout: 30
 
 expiry:
   enabled: true

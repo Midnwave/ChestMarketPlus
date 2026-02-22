@@ -77,3 +77,4 @@ update-available: "<yellow>Una nueva version de ChestMarket+ esta disponible! <w
 
 item-updated: "<green>Item de la tienda actualizado a <white>{item}<green>!"
 chest-peek-disabled: "<red>Las previsualizaciones de cofre estan desactivadas en este servidor."
+chat-input-timeout: "<red>El tiempo de espera expiro. Interactua con la tienda de nuevo."

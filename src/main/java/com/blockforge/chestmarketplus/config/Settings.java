@@ -23,6 +23,7 @@ public class Settings {
     private double taxRate;
     private double globalMinPrice;
     private double globalMaxPrice;
+    private int chatInputTimeout;
 
     private boolean expiryEnabled;
     private int expiryDurationDays;
@@ -116,6 +117,9 @@ public class Settings {
 
     public double getGlobalMaxPrice() { return globalMaxPrice; }
     public void setGlobalMaxPrice(double globalMaxPrice) { this.globalMaxPrice = globalMaxPrice; }
+
+    public int getChatInputTimeout() { return chatInputTimeout; }
+    public void setChatInputTimeout(int chatInputTimeout) { this.chatInputTimeout = chatInputTimeout; }
 
     public boolean isExpiryEnabled() { return expiryEnabled; }
     public void setExpiryEnabled(boolean expiryEnabled) { this.expiryEnabled = expiryEnabled; }
@@ -235,6 +239,7 @@ public class Settings {
     public void setBstatsEnabled(boolean bstatsEnabled) { this.bstatsEnabled = bstatsEnabled; }
 
     public String formatPrice(double price) {
-        return currencySymbol + String.format("%." + decimalPlaces + "f", price);
+        // %,f adds comma grouping separators (e.g. 1,000.00)
+        return currencySymbol + String.format("%,." + decimalPlaces + "f", price);
     }
 }
