@@ -105,10 +105,12 @@ public class ShopInteractListener implements Listener {
         String itemName = ItemUtils.getDisplayName(shop.getItemTemplate());
         int maxQty = shop.isAdmin() ? 64 : shop.getCurrentStock();
 
+        boolean allowAll = settings.isAllowAllQuantity();
+        String allHint = allowAll ? ", or <white>all<gray>" : "";
         MessageUtils.sendMessage(player, MessageUtils.colorize(
                 "<yellow>Buying: <white>" + itemName + " <gray>@ <green>"
                 + settings.formatPrice(shop.getBuyPrice()) + " <gray>each | Stock: <white>" + maxQty
-                + "\n<yellow>Enter quantity <gray>(1-" + maxQty + ", or <white>all<gray>) or type <white>cancel<gray>:"));
+                + "\n<yellow>Enter quantity <gray>(1-" + maxQty + allHint + ") or type <white>cancel<gray>:"));
 
         plugin.getChatInputListener().awaitInput(player, input -> {
             if ("cancel".equalsIgnoreCase(input)) {
@@ -116,7 +118,7 @@ public class ShopInteractListener implements Listener {
                 return;
             }
             int qty;
-            if ("all".equalsIgnoreCase(input)) {
+            if (allowAll && "all".equalsIgnoreCase(input)) {
                 qty = maxQty;
             } else {
                 try {
@@ -218,10 +220,12 @@ public class ShopInteractListener implements Listener {
         }
 
         String itemName = ItemUtils.getDisplayName(shop.getItemTemplate());
+        boolean allowAll = settings.isAllowAllQuantity();
+        String allHint = allowAll ? ", or <white>all<gray>" : "";
         MessageUtils.sendMessage(player, MessageUtils.colorize(
                 "<yellow>Selling: <white>" + itemName + " <gray>@ <red>"
                 + settings.formatPrice(shop.getSellPrice()) + " <gray>each | You have: <white>" + available
-                + "\n<yellow>Enter quantity <gray>(1-" + available + ", or <white>all<gray>) or type <white>cancel<gray>:"));
+                + "\n<yellow>Enter quantity <gray>(1-" + available + allHint + ") or type <white>cancel<gray>:"));
 
         plugin.getChatInputListener().awaitInput(player, input -> {
             if ("cancel".equalsIgnoreCase(input)) {
@@ -229,7 +233,7 @@ public class ShopInteractListener implements Listener {
                 return;
             }
             int qty;
-            if ("all".equalsIgnoreCase(input)) {
+            if (allowAll && "all".equalsIgnoreCase(input)) {
                 qty = available;
             } else {
                 try {

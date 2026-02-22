@@ -24,6 +24,7 @@ public class Settings {
     private double globalMinPrice;
     private double globalMaxPrice;
     private int chatInputTimeout;
+    private boolean allowAllQuantity;
 
     private boolean expiryEnabled;
     private int expiryDurationDays;
@@ -120,6 +121,9 @@ public class Settings {
 
     public int getChatInputTimeout() { return chatInputTimeout; }
     public void setChatInputTimeout(int chatInputTimeout) { this.chatInputTimeout = chatInputTimeout; }
+
+    public boolean isAllowAllQuantity() { return allowAllQuantity; }
+    public void setAllowAllQuantity(boolean allowAllQuantity) { this.allowAllQuantity = allowAllQuantity; }
 
     public boolean isExpiryEnabled() { return expiryEnabled; }
     public void setExpiryEnabled(boolean expiryEnabled) { this.expiryEnabled = expiryEnabled; }

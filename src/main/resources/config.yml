@@ -37,6 +37,8 @@ shops:
   global-max-price: 1000000.0
   # seconds before a pending chat-input prompt (quantity entry) expires, 0 to disable
   chat-input-timeout: 30
+  # if true, players may type 'all' to buy/sell the maximum available quantity
+  allow-all-quantity: true
 
 expiry:
   enabled: true
