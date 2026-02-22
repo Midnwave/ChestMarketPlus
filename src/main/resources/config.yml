@@ -1,0 +1,112 @@
+# language file to use (from locale/ folder without .yml)
+language: en_US
+
+# words players can write on line 1 of a sign to create a shop (case insensitive)
+shop-creation-trigger-words:
+  - "[ChestMarket]"
+  - "[ChestShop]"
+  - "[Shop]"
+  - "[CM]"
+  - "[CM+]"
+  - "[Market]"
+  - "[Buy]"
+  - "[Sell]"
+
+economy:
+  use-vault: true
+  starting-balance: 0.0
+  currency-symbol: "$"
+  currency-name: "dollars"
+  # 0 1 or 2
+  decimal-places: 2
+
+shops:
+  # override per player with chestmarket.limit.<number> permission
+  default-max-shops: 10
+  # 0 means free
+  creation-fee: 100.0
+  # percent taken from each transaction, 0 means no tax
+  tax-rate: 5.0
+  global-min-price: 0.01
+  global-max-price: 1000000.0
+
+expiry:
+  enabled: true
+  duration-days: 30
+  warn-days-before: 3
+  # if false the shop is just deactivated instead of deleted
+  auto-delete-expired: false
+
+display:
+  enabled: true
+  render-distance: 16
+  # degrees per tick, 0 disables rotation
+  item-rotation-speed: 2.0
+  # ticks between scroll steps, 0 disables scrolling
+  scrolling-text-speed: 40
+  out-of-stock-text: "<red><bold>OUT OF STOCK"
+
+signs:
+  auto-color: true
+  buy-color: "<green>"
+  sell-color: "<red>"
+  both-color: "<yellow>"
+
+items:
+  blacklist:
+    - "BEDROCK"
+    - "BARRIER"
+    - "COMMAND_BLOCK"
+    - "COMMAND_BLOCK_MINECART"
+    - "CHAIN_COMMAND_BLOCK"
+    - "REPEATING_COMMAND_BLOCK"
+    - "STRUCTURE_BLOCK"
+    - "STRUCTURE_VOID"
+    - "JIGSAW"
+    - "DEBUG_STICK"
+  blacklist-bypass-permission: "chestmarket.bypass.blacklist"
+  whitelist:
+    enabled: false
+    # blacklist blocks listed items, whitelist only allows listed items
+    mode: "blacklist"
+
+protection:
+  chest-protection: true
+  admin-bypass-permission: "chestmarket.admin.bypass"
+
+worldguard:
+  enabled: true
+  flag-name: "chest-shop"
+  # true means shops are allowed globally by default
+  default-value: true
+
+worlds:
+  # blacklist blocks listed worlds, whitelist only allows listed worlds
+  mode: "blacklist"
+  list: []
+
+notifications:
+  default-enabled: true
+  sound:
+    buy: "ENTITY_EXPERIENCE_ORB_PICKUP"
+    sell: "ENTITY_VILLAGER_YES"
+  particles:
+    transaction-burst: true
+    particle-type: "VILLAGER_HAPPY"
+    count: 15
+
+ratings:
+  enabled: true
+  # thumbs or off
+  mode: "thumbs"
+
+discord:
+  webhook-url: ""
+  admin-events: true
+
+update-checker:
+  enabled: true
+  notify-in-game: true
+
+bstats:
+  enabled: true
