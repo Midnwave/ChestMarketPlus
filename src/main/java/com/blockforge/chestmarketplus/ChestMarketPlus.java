@@ -47,9 +47,20 @@ public final class ChestMarketPlus extends JavaPlugin {
     private ShopInteractListener shopInteractListener;
 
     @Override
-    public void onEnable() {
+    public void onLoad() {
         instance = this;
 
+        // Config must load early so WorldGuard flags can read settings
+        configManager = new ConfigManager(this);
+        configManager.loadConfig();
+
+        // WorldGuard flags MUST be registered during onLoad(), before the server finishes startup
+        hookManager = new HookManager(this);
+        hookManager.registerWorldGuardFlags();
+    }
+
+    @Override
+    public void onEnable() {
         platformDetector = new PlatformDetector(this);
         getLogger().info("Detected platform: " + platformDetector.getPlatformName());
         if (platformDetector.hasDialogAPI()) {
@@ -59,9 +70,6 @@ public final class ChestMarketPlus extends JavaPlugin {
             dialogProvider = new InventoryDialogProvider(this);
             getLogger().info("Dialog API not available - using inventory GUI fallback");
         }
-
-        configManager = new ConfigManager(this);
-        configManager.loadConfig();
 
         localeManager = new LocaleManager(this, configManager);
         localeManager.loadLocale();
@@ -73,7 +81,6 @@ public final class ChestMarketPlus extends JavaPlugin {
             return;
         }
 
-        hookManager = new HookManager(this);
         hookManager.setupHooks();
 
         economyProvider = hookManager.getEconomyProvider();

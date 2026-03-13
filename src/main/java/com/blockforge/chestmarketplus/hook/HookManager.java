@@ -18,9 +18,30 @@ public class HookManager {
         this.plugin = plugin;
     }
 
+    /**
+     * Register WorldGuard flags early (called from onLoad).
+     */
+    public void registerWorldGuardFlags() {
+        if (!plugin.getConfigManager().getSettings().isWorldGuardEnabled()) return;
+
+        if (Bukkit.getPluginManager().getPlugin("WorldGuard") != null) {
+            try {
+                worldGuardHook = new WorldGuardHook(plugin);
+                worldGuardHook.registerFlags();
+                plugin.getLogger().info("Hooked into WorldGuard.");
+            } catch (Exception e) {
+                plugin.getLogger().warning("Failed to hook into WorldGuard: " + e.getMessage());
+                worldGuardHook = null;
+            }
+        }
+    }
+
     public void setupHooks() {
         setupEconomy();
-        setupWorldGuard();
+        // WorldGuard flags already registered in onLoad — skip if already done
+        if (worldGuardHook == null && plugin.getConfigManager().getSettings().isWorldGuardEnabled()) {
+            setupWorldGuard();
+        }
     }
 
     private void setupEconomy() {
